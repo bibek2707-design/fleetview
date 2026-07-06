@@ -1,0 +1,1636 @@
+<!DOCTYPE html>
+<!-- saved from url=(0074)file:///C:/Users/AnuragAshish/Claude/Projects/Vehicle%20ERP/FleetView.html -->
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FleetView — Fleet &amp; Cost-Revenue ERP</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<!-- Firebase (free backend): Authentication + Firestore -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<style>
+/* ===================== DESIGN SYSTEM ===================== */
+:root{
+  --bg:#f4f6fb; --surface:#ffffff; --surface-2:#fafbfe; --border:#e4e8f0;
+  --text:#1a2233; --text-soft:#5a6478; --text-faint:#8b94a7;
+  --primary:#2f6bff; --primary-soft:#eaf1ff; --primary-d:#1f4fd6;
+  --green:#13a97b; --green-soft:#e3f7f0; --red:#e5484d; --red-soft:#fdeced;
+  --amber:#f5a524; --amber-soft:#fef4e3; --purple:#7c5cff; --purple-soft:#efeaff;
+  --shadow:0 1px 2px rgba(16,24,40,.06),0 4px 16px rgba(16,24,40,.05);
+  --shadow-lg:0 8px 32px rgba(16,24,40,.12);
+  --radius:14px; --radius-sm:9px; --sidebar:248px;
+  --font:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+}
+[data-theme="dark"]{
+  --bg:#0e1118; --surface:#171b24; --surface-2:#1d222d; --border:#2a3140;
+  --text:#e8ecf4; --text-soft:#a3adc0; --text-faint:#6b7689;
+  --primary:#4d82ff; --primary-soft:#1b2740; --primary-d:#6b97ff;
+  --green:#2bc999; --green-soft:#13312a; --red:#ff6b6f; --red-soft:#3a1d20;
+  --amber:#ffb84d; --amber-soft:#3a2d12; --purple:#9c82ff; --purple-soft:#241d40;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 4px 16px rgba(0,0,0,.3);
+  --shadow-lg:0 8px 32px rgba(0,0,0,.5);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+::-webkit-scrollbar{width:9px;height:9px}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:6px}
+::-webkit-scrollbar-thumb:hover{background:var(--text-faint)}
+a{color:inherit;text-decoration:none}
+button{font-family:inherit;cursor:pointer;border:none;background:none}
+input,select,textarea{font-family:inherit;font-size:14px}
+
+/* ===================== LAYOUT ===================== */
+#app{display:flex;min-height:100vh}
+#sidebar{width:var(--sidebar);background:var(--surface);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;position:fixed;top:0;bottom:0;left:0;z-index:50;transition:transform .25s}
+.brand{display:flex;align-items:center;gap:11px;padding:20px 20px 18px}
+.brand .logo{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--primary),var(--purple));
+  display:grid;place-items:center;color:#fff;flex-shrink:0}
+.brand h1{font-size:17px;font-weight:700;letter-spacing:-.3px}
+.brand p{font-size:11px;color:var(--text-faint);font-weight:500}
+.nav{flex:1;overflow-y:auto;padding:6px 12px}
+.nav-group{font-size:10.5px;text-transform:uppercase;letter-spacing:.7px;color:var(--text-faint);
+  font-weight:700;padding:14px 12px 6px}
+.nav-item{display:flex;align-items:center;gap:11px;padding:9px 12px;border-radius:9px;color:var(--text-soft);
+  font-weight:500;font-size:13.5px;margin-bottom:1px;transition:.15s;cursor:pointer}
+.nav-item:hover{background:var(--surface-2);color:var(--text)}
+.nav-item.active{background:var(--primary-soft);color:var(--primary-d);font-weight:600}
+.nav-item svg{width:18px;height:18px;flex-shrink:0}
+.nav-item .badge{margin-left:auto;background:var(--border);color:var(--text-soft);font-size:11px;
+  font-weight:600;padding:1px 7px;border-radius:20px}
+.sidebar-foot{padding:12px;border-top:1px solid var(--border)}
+
+#main{flex:1;margin-left:var(--sidebar);display:flex;flex-direction:column;min-width:0}
+.topbar{height:62px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;
+  align-items:center;gap:14px;padding:0 24px;position:sticky;top:0;z-index:40}
+.topbar h2{font-size:18px;font-weight:700;letter-spacing:-.3px}
+.topbar .sub{font-size:12px;color:var(--text-faint);font-weight:500}
+.topbar .spacer{flex:1}
+.icon-btn{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;color:var(--text-soft);transition:.15s}
+.icon-btn:hover{background:var(--surface-2);color:var(--text)}
+.icon-btn svg{width:19px;height:19px}
+#menuToggle{display:none}
+.content{padding:24px;flex:1;max-width:1500px;width:100%}
+
+/* ===================== COMPONENTS ===================== */
+.btn{display:inline-flex;align-items:center;gap:7px;padding:9px 15px;border-radius:9px;font-weight:600;
+  font-size:13.5px;transition:.15s;background:var(--surface-2);color:var(--text);border:1px solid var(--border)}
+.btn:hover{background:var(--border)}
+.btn svg{width:16px;height:16px}
+.btn.primary{background:var(--primary);color:#fff;border-color:var(--primary)}
+.btn.primary:hover{background:var(--primary-d)}
+.btn.danger{color:var(--red)}.btn.danger:hover{background:var(--red-soft)}
+.btn.sm{padding:6px 11px;font-size:12.5px}
+.btn.ghost{background:transparent;border-color:transparent}.btn.ghost:hover{background:var(--surface-2)}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow)}
+.card-head{display:flex;align-items:center;gap:12px;padding:16px 18px;border-bottom:1px solid var(--border)}
+.card-head h3{font-size:15px;font-weight:700}
+.card-head .spacer{flex:1}
+.card-body{padding:18px}
+
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(215px,1fr));gap:14px;margin-bottom:18px}
+.stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 17px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+.stat .ic{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;margin-bottom:11px}
+.stat .ic svg{width:20px;height:20px}
+.stat .label{font-size:12.5px;color:var(--text-soft);font-weight:600;margin-bottom:3px}
+.stat .value{font-size:23px;font-weight:800;letter-spacing:-.6px}
+.stat .delta{font-size:11.5px;font-weight:600;margin-top:5px;display:flex;align-items:center;gap:3px}
+.delta.up{color:var(--green)}.delta.down{color:var(--red)}
+
+.chart-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+.chart-box{position:relative;height:280px}
+.chart-box.tall{height:330px}
+
+table.tbl{width:100%;border-collapse:collapse;font-size:13px}
+table.tbl th{text-align:left;padding:10px 12px;font-size:11px;text-transform:uppercase;letter-spacing:.5px;
+  color:var(--text-faint);font-weight:700;border-bottom:1px solid var(--border);white-space:nowrap;position:sticky;top:0;background:var(--surface);z-index:1}
+table.tbl td{padding:10px 12px;border-bottom:1px solid var(--border);white-space:nowrap}
+table.tbl tr:last-child td{border-bottom:none}
+table.tbl tbody tr:hover{background:var(--surface-2)}
+.tbl-wrap{overflow-x:auto;max-height:62vh;overflow-y:auto}
+.tbl-wrap.short{max-height:none}
+
+.tag{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:20px;font-size:11.5px;font-weight:600}
+.tag.green{background:var(--green-soft);color:var(--green)}
+.tag.red{background:var(--red-soft);color:var(--red)}
+.tag.amber{background:var(--amber-soft);color:var(--amber)}
+.tag.blue{background:var(--primary-soft);color:var(--primary-d)}
+.tag.purple{background:var(--purple-soft);color:var(--purple)}
+.tag.gray{background:var(--surface-2);color:var(--text-soft);border:1px solid var(--border)}
+.tag .dot{width:6px;height:6px;border-radius:50%;background:currentColor}
+
+.toolbar{display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+.search{position:relative;flex:1;min-width:200px;max-width:340px}
+.search svg{position:absolute;left:11px;top:50%;transform:translateY(-50%);width:16px;height:16px;color:var(--text-faint)}
+.search input{width:100%;padding:9px 12px 9px 34px;border-radius:9px;border:1px solid var(--border);background:var(--surface);color:var(--text)}
+.search input:focus{outline:none;border-color:var(--primary)}
+select.filter,input.filter{padding:8px 11px;border-radius:9px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-weight:500}
+select.filter:focus,input.filter:focus{outline:none;border-color:var(--primary)}
+
+/* form / modal */
+.modal-bg{position:fixed;inset:0;background:rgba(16,24,40,.5);backdrop-filter:blur(3px);z-index:100;
+  display:none;align-items:flex-start;justify-content:center;padding:40px 16px;overflow-y:auto}
+.modal-bg.open{display:flex}
+.modal{background:var(--surface);border-radius:16px;box-shadow:var(--shadow-lg);width:100%;max-width:760px;animation:pop .2s}
+.modal.wide{max-width:980px}
+@keyframes pop{from{transform:translateY(12px) scale(.98);opacity:0}to{transform:none;opacity:1}}
+.modal-head{display:flex;align-items:center;padding:18px 22px;border-bottom:1px solid var(--border)}
+.modal-head h3{font-size:17px;font-weight:700}
+.modal-head .spacer{flex:1}
+.modal-body{padding:22px;max-height:72vh;overflow-y:auto}
+.modal-foot{padding:16px 22px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px}
+.form-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px 16px}
+.form-grid.three{grid-template-columns:repeat(3,1fr)}
+.fld{display:flex;flex-direction:column;gap:5px}
+.fld.full{grid-column:1/-1}
+.fld label{font-size:12px;font-weight:600;color:var(--text-soft)}
+.fld input,.fld select,.fld textarea{padding:9px 11px;border-radius:9px;border:1px solid var(--border);background:var(--surface-2);color:var(--text)}
+.fld input:focus,.fld select:focus,.fld textarea:focus{outline:none;border-color:var(--primary);background:var(--surface)}
+.fld .hint{font-size:11px;color:var(--text-faint)}
+.fieldset-title{grid-column:1/-1;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;
+  color:var(--primary-d);margin-top:6px;padding-bottom:4px;border-bottom:1px solid var(--border)}
+
+.empty{text-align:center;padding:60px 20px;color:var(--text-faint)}
+.empty svg{width:46px;height:46px;margin-bottom:12px;opacity:.5}
+.row-actions{display:flex;gap:4px}
+.row-actions button{width:30px;height:30px;border-radius:7px;display:grid;place-items:center;color:var(--text-soft)}
+.row-actions button:hover{background:var(--surface-2);color:var(--text)}
+.row-actions button.del:hover{background:var(--red-soft);color:var(--red)}
+.row-actions svg{width:15px;height:15px}
+
+.toast{position:fixed;bottom:24px;right:24px;background:var(--text);color:var(--surface);padding:12px 18px;
+  border-radius:11px;font-weight:600;font-size:13.5px;box-shadow:var(--shadow-lg);z-index:200;
+  transform:translateY(80px);opacity:0;transition:.3s;display:flex;align-items:center;gap:9px}
+.toast.show{transform:none;opacity:1}
+.toast svg{width:18px;height:18px}
+
+.kv{display:grid;grid-template-columns:auto 1fr;gap:8px 18px;font-size:13px}
+.kv dt{color:var(--text-soft);font-weight:600}
+.kv dd{font-weight:600}
+.num{font-variant-numeric:tabular-nums}
+.pos{color:var(--green)}.neg{color:var(--red)}
+.subtab{display:flex;gap:4px;background:var(--surface-2);padding:4px;border-radius:11px;margin-bottom:16px;width:fit-content;flex-wrap:wrap}
+.subtab button{padding:7px 14px;border-radius:8px;font-weight:600;font-size:13px;color:var(--text-soft)}
+.subtab button.active{background:var(--surface);color:var(--text);box-shadow:var(--shadow)}
+.alert-banner{display:flex;align-items:center;gap:10px;padding:11px 15px;border-radius:11px;font-size:13px;font-weight:500;margin-bottom:16px}
+.alert-banner.warn{background:var(--amber-soft);color:var(--amber)}
+.alert-banner svg{width:18px;height:18px;flex-shrink:0}
+.mini-bar{height:5px;border-radius:4px;background:var(--border);overflow:hidden}
+.mini-bar > i{display:block;height:100%;border-radius:4px}
+
+@media(max-width:1100px){.chart-grid{grid-template-columns:1fr}}
+@media(max-width:860px){
+  #sidebar{transform:translateX(-100%)}#sidebar.open{transform:none;box-shadow:var(--shadow-lg)}
+  #main{margin-left:0}#menuToggle{display:grid}
+  .form-grid,.form-grid.three{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body data-theme="light">
+
+<!-- ===================== LOGIN GATE ===================== -->
+<div id="authScreen" style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg)">
+  <div class="card" style="width:100%;max-width:360px;padding:8px">
+    <div class="card-body" style="text-align:center">
+      <div class="logo" style="width:48px;height:48px;border-radius:12px;background:linear-gradient(135deg,var(--primary),var(--purple));display:grid;place-items:center;color:#fff;margin:0 auto 14px">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="26" height="26"><path d="M3 7h11v9H3z"></path><path d="M14 10h4l3 3v3h-7z"></path><circle cx="7" cy="18" r="1.6" fill="currentColor" stroke="none"></circle><circle cx="17" cy="18" r="1.6" fill="currentColor" stroke="none"></circle></svg>
+      </div>
+      <h2 style="margin-bottom:4px">FleetView</h2>
+      <p style="color:var(--text-faint);font-size:12.5px;margin-bottom:18px">Sign in to your team workspace</p>
+      <div class="fld" style="text-align:left;margin-bottom:10px"><label>Email</label><input id="authEmail" type="email" placeholder="you@company.com" autocomplete="username"></div>
+      <div class="fld" style="text-align:left;margin-bottom:6px"><label>Password</label><input id="authPass" type="password" placeholder="••••••••" autocomplete="current-password"></div>
+      <p id="authError" style="color:var(--red);font-size:12px;min-height:16px;text-align:left;margin-bottom:8px"></p>
+      <button class="btn primary" id="authSubmit" style="width:100%;justify-content:center">Sign In</button>
+      <p style="color:var(--text-faint);font-size:11.5px;margin-top:14px">Accounts are created by your admin in the Firebase console. Contact them if you don't have one yet.</p>
+    </div>
+  </div>
+</div>
+
+<div id="app" style="display:none">
+  <aside id="sidebar">
+    <div class="brand">
+      <div class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 7h11v9H3z"></path><path d="M14 10h4l3 3v3h-7z"></path><circle cx="7" cy="18" r="1.6" fill="currentColor" stroke="none"></circle><circle cx="17" cy="18" r="1.6" fill="currentColor" stroke="none"></circle></svg></div>
+      <div><h1>FleetView</h1><p>Logistics ERP · India</p></div>
+    </div>
+    <nav class="nav" id="nav"><div class="nav-group">Overview</div><div class="nav-item active" data-view="dashboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 13h8V3H3zM13 21h8V8h-8zM13 3v3h8V3zM3 21h8v-6H3z"></path></svg><span>Dashboard</span></div><div class="nav-group">Operations</div><div class="nav-item " data-view="trips"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3 8-8"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg><span>Trips</span><span class="badge">71</span></div><div class="nav-item " data-view="fuel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="22" x2="15" y2="22"></line><path d="M4 22V4a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v18"></path><path d="M14 9h2a2 2 0 0 1 2 2v6a2 2 0 0 0 2 2 2 2 0 0 0 2-2V8l-3-3"></path><line x1="4" y1="10" x2="14" y2="10"></line></svg><span>Fuel Log</span></div><div class="nav-item " data-view="maintenance"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4 4 0 0 0-5.3 5.3L3 18l3 3 6.4-6.4a4 4 0 0 0 5.3-5.3l-2.6 2.6-2.4-.6-.6-2.4z"></path></svg><span>Maintenance</span></div><div class="nav-item " data-view="outstanding"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg><span>Outstanding</span></div><div class="nav-group">Masters</div><div class="nav-item " data-view="vehicles"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h11v9H3z"></path><path d="M14 10h4l3 3v3h-7z"></path><circle cx="7.5" cy="18" r="1.5"></circle><circle cx="17.5" cy="18" r="1.5"></circle></svg><span>Fleet Master</span><span class="badge">5</span></div><div class="nav-item " data-view="drivers"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"></circle><path d="M4 21c0-4 4-6 8-6s8 2 8 6"></path></svg><span>Driver Master</span></div><div class="nav-item " data-view="customers"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21V8l9-5 9 5v13"></path><path d="M9 21v-6h6v6"></path></svg><span>Customer Master</span></div><div class="nav-item " data-view="routes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="2"></circle><circle cx="18" cy="18" r="2"></circle><path d="M8 6h7a3 3 0 0 1 0 6H9a3 3 0 0 0 0 6h7"></path></svg><span>Route Master</span></div><div class="nav-group">Insights</div><div class="nav-item " data-view="reports"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="8" y1="13" x2="16" y2="13"></line><line x1="8" y1="17" x2="16" y2="17"></line></svg><span>Reports</span></div></nav>
+    <div class="sidebar-foot">
+      <div class="nav-item" data-view="settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg><span>Settings</span></div>
+    </div>
+  </aside>
+
+  <div id="main">
+    <header class="topbar">
+      <button class="icon-btn" id="menuToggle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg></button>
+      <div><h2 id="pageTitle">Dashboard</h2><div class="sub" id="pageSub">Executive overview of fleet performance</div></div>
+      <div class="spacer"></div>
+      <span id="syncStatus" style="font-size:11.5px;color:var(--text-faint);font-weight:600;display:flex;align-items:center;gap:5px;margin-right:6px"><span id="syncDot" style="width:7px;height:7px;border-radius:50%;background:var(--amber);display:inline-block"></span>Connecting…</span>
+      <button class="btn sm" id="signOutBtn" title="Sign out"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg></button>
+      <button class="btn sm" id="importBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>Import</button>
+      <button class="btn sm primary" id="exportBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>Export Excel</button>
+      <button class="icon-btn" id="themeBtn" title="Toggle theme"><svg id="themeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.2" y1="4.2" x2="5.6" y2="5.6"></line><line x1="18.4" y1="18.4" x2="19.8" y2="19.8"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.2" y1="19.8" x2="5.6" y2="18.4"></line><line x1="18.4" y1="5.6" x2="19.8" y2="4.2"></line></svg></button>
+    </header>
+    <main class="content" id="content">
+    <div class="card" style="margin-bottom:18px"><div class="card-body" style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
+      <div class="fld"><label>From</label><input type="date" class="filter" id="dFrom" value=""></div>
+      <div class="fld"><label>To</label><input type="date" class="filter" id="dTo" value=""></div>
+      <div class="fld"><label>Vehicle</label><select class="filter" id="dVeh"><option value="">All Vehicles</option><option value="veh1">NL01AJ8744</option><option value="veh2">JH10DK2074</option><option value="veh3">NL01AK1643</option><option value="veh4">JH10CZ1601</option><option value="veh5">JH10DJ1780</option></select></div>
+      <div class="fld"><label>Customer</label><select class="filter" id="dCus"><option value="">All Customers</option><option value="cus1">Suraj Steels Pvt Ltd</option><option value="cus2">Bibek Traders</option><option value="cus3">HCL Cements</option><option value="cus4">Tata Logistics</option><option value="cus5">NE Cargo Movers</option><option value="cus6">Adani Wilmar</option></select></div>
+      <button class="btn sm" id="dClear">Clear</button>
+    </div></div>
+
+    <div class="stat-grid">
+      <div class="stat">
+    <div class="ic" style="background:var(--green-soft);color:var(--green)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg></div>
+    <div class="label">Total Revenue</div><div class="value num">₹37.4 L</div></div>
+      <div class="stat">
+    <div class="ic" style="background:var(--amber-soft);color:var(--amber)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="22" x2="15" y2="22"></line><path d="M4 22V4a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v18"></path><path d="M14 9h2a2 2 0 0 1 2 2v6a2 2 0 0 0 2 2 2 2 0 0 0 2-2V8l-3-3"></path><line x1="4" y1="10" x2="14" y2="10"></line></svg></div>
+    <div class="label">Total Expenses</div><div class="value num">₹31.0 L</div></div>
+      <div class="stat">
+    <div class="ic" style="background:var(--green-soft);color:var(--green)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 13h8V3H3zM13 21h8V8h-8zM13 3v3h8V3zM3 21h8v-6H3z"></path></svg></div>
+    <div class="label">Net Profit</div><div class="value num">₹6.31 L</div><div class="delta up">16.9% margin</div></div>
+      <div class="stat">
+    <div class="ic" style="background:var(--blue-soft);color:var(--blue)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3 8-8"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg></div>
+    <div class="label">Total Trips</div><div class="value num">71</div></div>
+      <div class="stat">
+    <div class="ic" style="background:var(--purple-soft);color:var(--purple)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h11v9H3z"></path><path d="M14 10h4l3 3v3h-7z"></path><circle cx="7.5" cy="18" r="1.5"></circle><circle cx="17.5" cy="18" r="1.5"></circle></svg></div>
+    <div class="label">Active Vehicles</div><div class="value num">5</div></div>
+      <div class="stat">
+    <div class="ic" style="background:var(--blue-soft);color:var(--blue)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="2"></circle><circle cx="18" cy="18" r="2"></circle><path d="M8 6h7a3 3 0 0 1 0 6H9a3 3 0 0 0 0 6h7"></path></svg></div>
+    <div class="label">Vehicles On Route</div><div class="value num">5</div></div>
+      <div class="stat">
+    <div class="ic" style="background:var(--amber-soft);color:var(--amber)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h11v9H3z"></path><path d="M14 10h4l3 3v3h-7z"></path><circle cx="7.5" cy="18" r="1.5"></circle><circle cx="17.5" cy="18" r="1.5"></circle></svg></div>
+    <div class="label">Vehicles Idle</div><div class="value num">0</div></div>
+      <div class="stat">
+    <div class="ic" style="background:var(--red-soft);color:var(--red)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 9 2 15 6 23 2 23 18 15 22 9 18 1 22"></polygon><line x1="9" y1="2" x2="9" y2="18"></line><line x1="15" y1="6" x2="15" y2="22"></line></svg></div>
+    <div class="label">Total Empty KM</div><div class="value num">3,849</div><div class="delta down">16.2% of total</div></div>
+      <div class="stat">
+    <div class="ic" style="background:var(--green-soft);color:var(--green)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="22" x2="15" y2="22"></line><path d="M4 22V4a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v18"></path><path d="M14 9h2a2 2 0 0 1 2 2v6a2 2 0 0 0 2 2 2 2 0 0 0 2-2V8l-3-3"></path><line x1="4" y1="10" x2="14" y2="10"></line></svg></div>
+    <div class="label">Avg Mileage</div><div class="value num">3.66 km/l</div></div>
+      <div class="stat">
+    <div class="ic" style="background:var(--green-soft);color:var(--green)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg></div>
+    <div class="label">Monthly Revenue</div><div class="value num">₹4.04 L</div></div>
+      <div class="stat">
+    <div class="ic" style="background:var(--green-soft);color:var(--green)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 13h8V3H3zM13 21h8V8h-8zM13 3v3h8V3zM3 21h8v-6H3z"></path></svg></div>
+    <div class="label">Monthly Profit</div><div class="value num">₹65.6k</div></div>
+      <div class="stat">
+    <div class="ic" style="background:var(--purple-soft);color:var(--purple)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="2"></circle><circle cx="18" cy="18" r="2"></circle><path d="M8 6h7a3 3 0 0 1 0 6H9a3 3 0 0 0 0 6h7"></path></svg></div>
+    <div class="label">Revenue / km</div><div class="value num">₹157</div></div>
+    </div>
+
+    <div class="chart-grid">
+      <div class="card"><div class="card-head"><h3>Revenue, Cost &amp; Profit Trend</h3></div>
+    <div class="card-body"><div class="chart-box tall"><canvas id="cTrend" width="697" height="364" style="display: block; box-sizing: border-box; height: 330px; width: 632px;"></canvas></div></div></div>
+      <div class="card"><div class="card-head"><h3>Expense Breakdown</h3></div>
+    <div class="card-body"><div class="chart-box "><canvas id="cExpense" width="698" height="309" style="display: block; box-sizing: border-box; height: 280px; width: 632px;"></canvas></div></div></div>
+      <div class="card"><div class="card-head"><h3>Trips by Vehicle</h3></div>
+    <div class="card-body"><div class="chart-box "><canvas id="cVehTrips" width="697" height="309" style="display: block; box-sizing: border-box; height: 280px; width: 632px;"></canvas></div></div></div>
+      <div class="card"><div class="card-head"><h3>Vehicle Utilization (KM)</h3></div>
+    <div class="card-body"><div class="chart-box "><canvas id="cUtil" width="698" height="309" style="display: block; box-sizing: border-box; height: 280px; width: 632px;"></canvas></div></div></div>
+      <div class="card"><div class="card-head"><h3>Top Customers by Revenue</h3></div>
+    <div class="card-body"><div class="chart-box "><canvas id="cTopCust" width="697" height="309" style="display: block; box-sizing: border-box; height: 280px; width: 632px;"></canvas></div></div></div>
+      <div class="card"><div class="card-head"><h3>Top Routes by Profit</h3></div>
+    <div class="card-body"><div class="chart-box "><canvas id="cTopRoute" width="698" height="309" style="display: block; box-sizing: border-box; height: 280px; width: 632px;"></canvas></div></div></div>
+      <div class="card"><div class="card-head"><h3>Profitability by Vehicle</h3></div>
+    <div class="card-body"><div class="chart-box "><canvas id="cVehProfit" width="697" height="309" style="display: block; box-sizing: border-box; height: 280px; width: 632px;"></canvas></div></div></div>
+      <div class="card"><div class="card-head"><h3>Fuel Cost Trend</h3></div>
+    <div class="card-body"><div class="chart-box "><canvas id="cFuel" width="698" height="309" style="display: block; box-sizing: border-box; height: 280px; width: 632px;"></canvas></div></div></div>
+    </div></main>
+  </div>
+</div>
+
+<input type="file" id="fileInput" accept=".xlsx,.xls" style="display:none">
+<div class="modal-bg" id="modalBg"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   FleetView — single-file Fleet & Cost-Revenue ERP
+   Data persisted in localStorage under key "fleetview.db".
+   ============================================================ */
+"use strict";
+/* ============================ FIREBASE BACKEND ============================ */
+// 1) Create a free project at https://console.firebase.google.com
+// 2) Build > Firestore Database > Create database (production mode is fine, rules below lock it down)
+// 3) Build > Authentication > Sign-in method > enable "Email/Password"
+// 4) Authentication > Users > Add user (once per teammate, e.g. you@company.com / a password you set)
+// 5) Project settings (gear icon) > General > scroll to "Your apps" > Add app > Web (</>) > copy the config object below
+// 6) Firestore > Rules, paste:
+//      rules_version = '2';
+//      service cloud.firestore {
+//        match /databases/{database}/documents {
+//          match /fleetview/{doc} {
+//            allow read, write: if request.auth != null;
+//          }
+//        }
+//      }
+const FIREBASE_CONFIG = {
+  apiKey: "PASTE_YOUR_API_KEY",
+  authDomain: "PASTE_YOUR_PROJECT.firebaseapp.com",
+  projectId: "PASTE_YOUR_PROJECT_ID",
+  storageBucket: "PASTE_YOUR_PROJECT.appspot.com",
+  messagingSenderId: "PASTE_YOUR_SENDER_ID",
+  appId: "PASTE_YOUR_APP_ID"
+};
+const FIRESTORE_DOC = "fleetview/shared-data"; // single shared document all teammates read/write
+
+firebase.initializeApp(FIREBASE_CONFIG);
+const fbAuth = firebase.auth();
+const fbDb = firebase.firestore();
+let fbUnsub = null;         // active Firestore listener unsubscribe fn
+let applyingRemote = false; // guard to avoid re-broadcasting a change we just received
+let lastPushedJSON = "";    // last DB payload we sent, to detect our own echoed snapshot
+
+function setSyncStatus(state){ // "connecting" | "live" | "offline" | "saving"
+  const dot=document.getElementById("syncDot"), wrap=document.getElementById("syncStatus");
+  if(!dot||!wrap) return;
+  const map={connecting:["var(--amber)","Connecting…"],live:["var(--green)","Synced live"],
+    offline:["var(--red)","Offline"],saving:["var(--amber)","Saving…"]};
+  const [color,label]=map[state]||map.connecting;
+  dot.style.background=color; wrap.lastChild.textContent=label;
+}
+
+function attachFirestoreSync(){
+  setSyncStatus("connecting");
+  fbUnsub && fbUnsub();
+  fbUnsub = fbDb.doc(FIRESTORE_DOC).onSnapshot(snap=>{
+    if(snap.exists){
+      const remote = snap.data();
+      const remoteJSON = JSON.stringify(remote.db||{});
+      if(remoteJSON===lastPushedJSON){ setSyncStatus("live"); return; } // our own write echoing back
+      applyingRemote=true;
+      DB = remote.db || DB;
+      COLLECTIONS.forEach(c=>{ if(!Array.isArray(DB[c])) DB[c]=[]; });
+      localStorage.setItem(DB_KEY, JSON.stringify(DB));
+      applyingRemote=false;
+      setSyncStatus("live");
+      destroyCharts(); go(currentView||"dashboard");
+    } else {
+      // first run: seed Firestore from local/sample data
+      pushDBNow();
+    }
+  }, err=>{ console.error(err); setSyncStatus("offline"); });
+}
+
+let pushTimer=null;
+function pushDBNow(){
+  const payload=JSON.stringify(DB);
+  lastPushedJSON=payload;
+  setSyncStatus("saving");
+  fbDb.doc(FIRESTORE_DOC).set({ db:DB, updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+    updatedBy: (fbAuth.currentUser&&fbAuth.currentUser.email)||"unknown" })
+    .then(()=>setSyncStatus("live"))
+    .catch(e=>{ console.error(e); setSyncStatus("offline"); });
+}
+function pushDBDebounced(){
+  clearTimeout(pushTimer);
+  pushTimer=setTimeout(pushDBNow, 600); // batch rapid edits into one write
+}
+
+/* ============================ DATA LAYER ============================ */
+const DB_KEY="fleetview.db", SETT_KEY="fleetview.settings";
+const COLLECTIONS=["vehicles","drivers","customers","routes","trips","fuel","maintenance"];
+let DB={}, SETT={};
+
+function loadDB(){
+  try{ DB=JSON.parse(localStorage.getItem(DB_KEY))||null; }catch(e){ DB=null; }
+  if(!DB){ DB=seedData(); }
+  COLLECTIONS.forEach(c=>{ if(!Array.isArray(DB[c])) DB[c]=[]; });
+  try{ SETT=JSON.parse(localStorage.getItem(SETT_KEY))||{}; }catch(e){ SETT={}; }
+  SETT={theme:"light",mapsKey:"",company:"My Transport Co.",currency:"₹",
+    fuelPrice:92, maintPerKm:2.5, insMonthly:8000, permitMonthly:3000, ...SETT};
+}
+function saveDB(){
+  try{ localStorage.setItem(DB_KEY,JSON.stringify(DB)); }catch(e){ toast("Storage full — export & clear old data",1); }
+  if(!applyingRemote) pushDBDebounced(); // push to teammates, unless this save was caused by receiving their change
+}
+function saveSett(){ localStorage.setItem(SETT_KEY,JSON.stringify(SETT)); }
+function uid(p){ return p+Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+
+function nextTripId(){
+  let max=0; DB.trips.forEach(t=>{ const m=/TRP-(\d+)/.exec(t.tripId||""); if(m) max=Math.max(max,+m[1]); });
+  return "TRP-"+String(max+1).padStart(4,"0");
+}
+function get(coll,id){ return DB[coll].find(x=>x.id===id); }
+function vehicleLabel(id){ const v=get("vehicles",id); return v?v.regNo:"—"; }
+function driverLabel(id){ const d=get("drivers",id); return d?d.name:"—"; }
+function customerLabel(id){ const c=get("customers",id); return c?c.name:"—"; }
+
+/* ============================ FINANCE ENGINE ============================ */
+// Allocated overhead (insurance/permit) spread per-day a trip occupies; maintenance per km.
+function tripFinance(t){
+  const rev=+t.freight||0;
+  const fuel=+t.fuelCost||0, toll=+t.tollCost||0, driverAllow=+t.driverAllow||0,
+        load=+t.loadingCharges||0, unload=+t.unloadingCharges||0, other=+t.otherExpenses||0;
+  const dist=+t.totalDistance||0;
+  const maint=Math.round((+SETT.maintPerKm||0)*dist);
+  // days the trip spans (min 1) for fixed-cost allocation
+  let days=1;
+  if(t.pickupDate&&t.deliveryDate){ const d=(new Date(t.deliveryDate)-new Date(t.pickupDate))/86400000; days=Math.max(1,Math.round(d)||1); }
+  const ins=Math.round((+SETT.insMonthly||0)/30*days);
+  const permit=Math.round((+SETT.permitMonthly||0)/30*days);
+  // empty running fuel cost estimate
+  const emptyKm=+t.emptyDistance||0;
+  const totalCost=fuel+toll+driverAllow+load+unload+other+maint+ins+permit;
+  const profit=rev-totalCost;
+  const margin=rev?profit/rev*100:0;
+  return {rev,fuel,toll,driverAllow,load,unload,other,maint,ins,permit,dist,emptyKm,
+    loadedKm:+t.loadedDistance||0,totalCost,profit,margin,
+    profitPerKm:dist?profit/dist:0, revPerKm:dist?rev/dist:0, costPerKm:dist?totalCost/dist:0};
+}
+function sumFinance(trips){
+  const a={rev:0,totalCost:0,profit:0,fuel:0,toll:0,driverAllow:0,load:0,unload:0,other:0,maint:0,ins:0,permit:0,dist:0,emptyKm:0,loadedKm:0};
+  trips.forEach(t=>{ const f=tripFinance(t); for(const k in a) if(k in f) a[k]+=f[k]; });
+  a.margin=a.rev?a.profit/a.rev*100:0; return a;
+}
+
+/* ============================ FORMAT HELPERS ============================ */
+const C=()=>SETT.currency||"₹";
+function inr(n){ n=Math.round(+n||0); const s=Math.abs(n).toLocaleString("en-IN"); return (n<0?"-":"")+C()+s; }
+function inrShort(n){ n=+n||0; const a=Math.abs(n); let v,suf="";
+  if(a>=1e7){v=n/1e7;suf=" Cr";} else if(a>=1e5){v=n/1e5;suf=" L";} else if(a>=1e3){v=n/1e3;suf="k";} else return C()+Math.round(n);
+  return C()+v.toFixed(v>=100?0:v>=10?1:2)+suf; }
+function num(n){ return (+n||0).toLocaleString("en-IN"); }
+function pct(n){ return (n>=0?"":"")+(+n||0).toFixed(1)+"%"; }
+function fmtDate(d){ if(!d) return "—"; const x=new Date(d); if(isNaN(x)) return d;
+  return x.toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"}); }
+function daysUntil(d){ if(!d) return null; const x=new Date(d); if(isNaN(x)) return null;
+  return Math.ceil((x-new Date())/86400000); }
+function esc(s){ return (s==null?"":""+s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+
+/* ============================ SEED DATA ============================ */
+function seedData(){
+  const db={vehicles:[],drivers:[],customers:[],routes:[],trips:[],fuel:[],maintenance:[]};
+  const yr=2027;
+  // ---- Vehicles (5 real registrations) ----
+  const vdefs=[
+    ["NL01AJ8744","Multi-Axle Trailer",60,"Tata","Signa 4825.TK",2022,"Sujit",420130],
+    ["JH10DK2074","Tipper Truck",40,"Ashok Leyland","AVTR 3520",2021,"Sujit",512400],
+    ["NL01AK1643","Multi-Axle Trailer",80,"BharatBenz","3528C",2023,"Bibek",298750],
+    ["JH10CZ1601","Haulage Truck",50,"Tata","Prima 3530.K",2020,"Sujit",648900],
+    ["JH10DJ1780","Tipper Truck",45,"Eicher","Pro 8035",2022,"Bibek",389600],
+  ];
+  vdefs.forEach((v,i)=>{ db.vehicles.push({id:"veh"+(i+1),regNo:v[0],vehNo:v[0],type:v[1],capacity:v[2],
+    make:v[3],model:v[4],year:v[5],fuelType:"Diesel",mileage:(3.6-i*0.15).toFixed(1),tankCap:300+i*20,
+    odometer:v[7],owner:v[6],insExpiry:`${yr}-${["09","04","11","02","07"][i]}-${["18","27","05","14","22"][i]}`,
+    fitnessExpiry:`${yr}-${["10","06","12","03","08"][i]}-12`,permitExpiry:`${yr+1}-${["03","09","01","05","11"][i]}-20`,
+    pucExpiry:`${yr}-0${[8,7,9,6,7][i]}-15`,rc:"RC-"+v[0],gps:i%2===0?"Yes":"No",status:"Active",emi:i<3?100000+i*25000:0}); });
+
+  // ---- Drivers ----
+  const ddefs=[["Moti Lal","9031276001","JH-W2034567","veh1"],["Ramesh Yadav","9031276002","NL-D1129834","veh2"],
+    ["Suresh Mahto","9031276003","JH-T5567120","veh3"],["Bijoy Das","9031276004","WB-K9921045","veh4"],
+    ["Anil Kumar","9031276005","JH-M3320988","veh5"],["Pawan Singh","9031276006","BR-P8845231",""]];
+  ddefs.forEach((d,i)=>{ db.drivers.push({id:"drv"+(i+1),name:d[0],empId:"EMP-"+String(i+1).padStart(3,"0"),
+    mobile:d[1],license:d[2],licenseExpiry:`${yr}-${["12","08","10","06","11","09"][i]}-30`,
+    aadhaar:`XXXX-XXXX-${1000+i*111}`,address:["Dhanbad, JH","Dimapur, NL","Bokaro, JH","Asansol, WB","Ranchi, JH","Patna, BR"][i],
+    emergency:"90312770"+(10+i),salary:18000+i*1000,incentives:2000+i*500,assignedVehicle:d[3],status:"Active"}); });
+
+  // ---- Customers ----
+  const cdefs=[["Suraj Steels Pvt Ltd","20ABCDS1234F1Z5","Suraj Agarwal","9031276214","accounts@surajsteels.in","Jamshedpur, JH",45,1500000],
+    ["Bibek Traders","20BIBEK5678G1Z2","Bibek Roy","9831122334","bibek@traders.in","Kolkata, WB",30,800000],
+    ["HCL Cements","20HCLCM9012H1Z8","Procurement Dept","9988776655","logistics@hclcem.in","Bokaro, JH",60,2500000],
+    ["Tata Logistics","20TATAL3456J1Z1","R. Menon","9000011122","freight@tatalog.in","Jamshedpur, JH",45,3000000],
+    ["NE Cargo Movers","13NECMV7890K1Z4","D. Sangma","9436001234","ops@necargo.in","Guwahati, AS",30,1200000],
+    ["Adani Wilmar","24ADANW2345L1Z7","Supply Chain","9111223344","transport@adaniw.in","Haldia, WB",45,2000000]];
+  cdefs.forEach((c,i)=>{ db.customers.push({id:"cus"+(i+1),name:c[0],gst:c[1],contact:c[2],phone:c[3],email:c[4],
+    address:c[5],paymentTerms:c[6]+" days",creditLimit:c[7],status:"Active"}); });
+
+  // ---- Routes ----
+  const rdefs=[["Dhanbad","Kolkata","JH→WB",260,48000,90,4000,"5h 30m"],
+    ["Bokaro","Jamshedpur","JH",165,32000,55,2500,"3h 30m"],
+    ["Dimapur","Guwahati","NL→AS",290,52000,100,3500,"6h"],
+    ["Ranchi","Patna","JH→BR",330,58000,115,4500,"6h 30m"],
+    ["Jamshedpur","Haldia","JH→WB",310,55000,108,5000,"6h 15m"],
+    ["Kolkata","Dhanbad","WB→JH",260,46000,90,4000,"5h 30m"],
+    ["Bokaro","Kolkata","JH→WB",290,50000,100,4200,"6h"]];
+  rdefs.forEach((r,i)=>{ db.routes.push({id:"rt"+(i+1),pickup:r[0],drop:r[1],state:r[2],distance:r[3],
+    freight:r[4],estFuel:r[5],estToll:r[6],travelTime:r[7]}); });
+
+  // ---- Trips (generated across Jan–Jun 2027 for trends) ----
+  const materials=["TMT Steel Bars","Cement Bags","Coal","Iron Ore","Edible Oil","Packaged Goods","Construction Aggregate"];
+  const statuses=["Closed","Closed","Closed","Closed","Delivered","In Transit","Planned"];
+  let seed=42; const rnd=()=>{ seed=(seed*9301+49297)%233280; return seed/233280; };
+  let odo={veh1:420130,veh2:512400,veh3:298750,veh4:648900,veh5:389600};
+  let tn=1;
+  for(let month=0;month<6;month++){
+    const tripsThisMonth=10+Math.floor(rnd()*4);
+    for(let k=0;k<tripsThisMonth;k++){
+      const vi=Math.floor(rnd()*5), veh="veh"+(vi+1);
+      const drv=db.drivers.find(d=>d.assignedVehicle===veh)||db.drivers[vi];
+      const cus="cus"+(1+Math.floor(rnd()*6));
+      const rt=db.routes[Math.floor(rnd()*db.routes.length)];
+      const day=1+Math.floor(rnd()*26);
+      const pickupDate=`2027-0${month+1}-${String(day).padStart(2,"0")}`;
+      const delDay=Math.min(28,day+1+Math.floor(rnd()*2));
+      const deliveryDate=`2027-0${month+1}-${String(delDay).padStart(2,"0")}`;
+      const loaded=rt.distance, empty=Math.floor(20+rnd()*70), dist=loaded+empty;
+      const mileage=(3.2+rnd()*0.9);
+      const fuelConsumed=Math.round(dist/mileage);
+      const freight=Math.round(rt.freight*(0.92+rnd()*0.26));
+      const fuelCost=Math.round(fuelConsumed*(88+rnd()*8));
+      const toll=Math.round(rt.estToll*(0.9+rnd()*0.3))*6;
+      const advance=Math.round(freight*(0.3+rnd()*0.4));
+      const st=statuses[Math.min(6,Math.floor(rnd()*7))];
+      odo[veh]+=dist;
+      db.trips.push({id:"trp"+tn,tripId:"TRP-"+String(tn).padStart(4,"0"),vehicle:veh,driver:drv.id,customer:cus,
+        pickup:rt.pickup,drop:rt.drop,state:rt.state,pickupDate,pickupTime:"08:00",deliveryDate,deliveryTime:"18:00",
+        material:materials[Math.floor(rnd()*materials.length)],weight:Math.round(30+rnd()*40),quantity:Math.round(30+rnd()*40)+" T",
+        invoiceNo:"INV-"+(2700+tn),lrNo:"LR-"+(8800+tn),
+        freight,advance,remaining:freight-advance,fuelCost,tollCost:toll,driverAllow:Math.round(1500+rnd()*2000),
+        loadingCharges:Math.round(1500+rnd()*2000),unloadingCharges:Math.round(1500+rnd()*2000),otherExpenses:Math.round(rnd()*1500),
+        startOdo:odo[veh]-dist,endOdo:odo[veh],totalDistance:dist,loadedDistance:loaded,emptyDistance:empty,
+        mileage:mileage.toFixed(2),fuelConsumed,status:st,remarks:""});
+      tn++;
+    }
+  }
+  // set vehicle odometers to latest
+  db.vehicles.forEach(v=>{ if(odo[v.id]) v.odometer=odo[v.id]; });
+
+  // ---- Fuel logs ----
+  let fn=1;
+  db.trips.filter(t=>t.status==="Closed"||t.status==="Delivered").forEach(t=>{
+    if(rnd()>0.4){ db.fuel.push({id:"fl"+fn,vehicle:t.vehicle,date:t.pickupDate,
+      station:["IndianOil "+t.pickup,"HP "+t.pickup,"BPCL "+t.pickup][Math.floor(rnd()*3)],
+      litres:t.fuelConsumed,amount:t.fuelCost,odometer:t.endOdo,mileage:t.mileage}); fn++; }
+  });
+  // ---- Maintenance ----
+  const mdefs=[["veh1","2027-02-10","Oil Change + Filter",8500,"Tata Service Dhanbad","2027-05-10"],
+    ["veh2","2027-01-22","Tyre Replacement (4)",62000,"MRF Bokaro","2027-12-22"],
+    ["veh3","2027-03-05","Brake & Suspension Repair",18500,"BharatBenz Guwahati","2027-09-05"],
+    ["veh4","2027-02-28","Full Service",14200,"Tata Service Asansol","2027-05-28"],
+    ["veh5","2027-04-12","Clutch Plate Replacement",22000,"Eicher Ranchi","2027-10-12"],
+    ["veh1","2027-05-18","Tyre Rotation + Oil",9800,"Tata Service Dhanbad","2027-08-18"],
+    ["veh3","2027-06-02","Engine Tune-up",15600,"BharatBenz Guwahati","2027-12-02"]];
+  mdefs.forEach((m,i)=>{ db.maintenance.push({id:"mt"+(i+1),vehicle:m[0],date:m[1],serviceType:m[2],cost:m[3],
+    garage:m[4],nextDue:m[5],oilChange:m[2].includes("Oil")?"Yes":"No",tyreChange:m[2].includes("Tyre")?"Yes":"No",remarks:""}); });
+
+  return db;
+}
+/* ============================ ICONS ============================ */
+const ICON={
+  dash:'<path d="M3 13h8V3H3zM13 21h8V8h-8zM13 3v3h8V3zM3 21h8v-6H3z"/>',
+  truck:'<path d="M3 7h11v9H3z"/><path d="M14 10h4l3 3v3h-7z"/><circle cx="7.5" cy="18" r="1.5"/><circle cx="17.5" cy="18" r="1.5"/>',
+  driver:'<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/>',
+  cust:'<path d="M3 21V8l9-5 9 5v13"/><path d="M9 21v-6h6v6"/>',
+  route:'<circle cx="6" cy="6" r="2"/><circle cx="18" cy="18" r="2"/><path d="M8 6h7a3 3 0 0 1 0 6H9a3 3 0 0 0 0 6h7"/>',
+  trip:'<path d="M9 11l3 3 8-8"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>',
+  fuel:'<line x1="3" y1="22" x2="15" y2="22"/><path d="M4 22V4a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v18"/><path d="M14 9h2a2 2 0 0 1 2 2v6a2 2 0 0 0 2 2 2 2 0 0 0 2-2V8l-3-3"/><line x1="4" y1="10" x2="14" y2="10"/>',
+  wrench:'<path d="M14.7 6.3a4 4 0 0 0-5.3 5.3L3 18l3 3 6.4-6.4a4 4 0 0 0 5.3-5.3l-2.6 2.6-2.4-.6-.6-2.4z"/>',
+  report:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/>',
+  cash:'<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>',
+  plus:'<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>',
+  edit:'<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4z"/>',
+  trash:'<polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>',
+  search:'<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>',
+  check:'<polyline points="20 6 9 17 4 12"/>',
+  warn:'<path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>',
+  eye:'<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>',
+  map:'<polygon points="1 6 9 2 15 6 23 2 23 18 15 22 9 18 1 22"/><line x1="9" y1="2" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="22"/>',
+};
+function svg(p,w){ return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${w||2}" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`; }
+
+/* ============================ NAVIGATION ============================ */
+const NAV=[
+  {group:"Overview",items:[{id:"dashboard",label:"Dashboard",icon:"dash"}]},
+  {group:"Operations",items:[
+    {id:"trips",label:"Trips",icon:"trip"},
+    {id:"fuel",label:"Fuel Log",icon:"fuel"},
+    {id:"maintenance",label:"Maintenance",icon:"wrench"},
+    {id:"outstanding",label:"Outstanding",icon:"cash"},
+  ]},
+  {group:"Masters",items:[
+    {id:"vehicles",label:"Fleet Master",icon:"truck"},
+    {id:"drivers",label:"Driver Master",icon:"driver"},
+    {id:"customers",label:"Customer Master",icon:"cust"},
+    {id:"routes",label:"Route Master",icon:"route"},
+  ]},
+  {group:"Insights",items:[{id:"reports",label:"Reports",icon:"report"}]},
+];
+const TITLES={dashboard:["Dashboard","Executive overview of fleet performance"],
+  trips:["Trips","Trip register, profitability & status"],fuel:["Fuel Log","Refuelling & mileage tracking"],
+  maintenance:["Maintenance","Service, renewals & repairs"],outstanding:["Outstanding Payments","Customer receivables"],
+  vehicles:["Fleet Master","Vehicle database & document expiry"],drivers:["Driver Master","Driver records & assignments"],
+  customers:["Customer Master","Customer accounts & credit"],routes:["Route Master","Standard lanes & freight"],
+  reports:["Reports","Generate & download Excel reports"],settings:["Settings","Configuration & data management"]};
+
+let currentView="dashboard";
+const charts={};
+function destroyCharts(){ Object.keys(charts).forEach(k=>{ try{charts[k].destroy();}catch(e){} delete charts[k]; }); }
+
+function renderNav(){
+  const nav=document.getElementById("nav");
+  nav.innerHTML=NAV.map(g=>`<div class="nav-group">${g.group}</div>`+
+    g.items.map(it=>{ let badge="";
+      if(it.id==="trips") badge=`<span class="badge">${DB.trips.length}</span>`;
+      if(it.id==="vehicles") badge=`<span class="badge">${DB.vehicles.filter(v=>v.status==="Active").length}</span>`;
+      return `<div class="nav-item ${it.id===currentView?"active":""}" data-view="${it.id}">${svg(ICON[it.icon])}<span>${it.label}</span>${badge}</div>`;
+    }).join("")).join("");
+  document.querySelectorAll("#sidebar .nav-item").forEach(el=>el.onclick=()=>{ go(el.dataset.view); document.getElementById("sidebar").classList.remove("open"); });
+}
+function go(view){
+  currentView=view; destroyCharts();
+  const [t,s]=TITLES[view]||[view,""];
+  document.getElementById("pageTitle").textContent=t;
+  document.getElementById("pageSub").textContent=s;
+  renderNav();
+  const c=document.getElementById("content"); c.scrollTop=0;
+  ({dashboard:viewDashboard,trips:viewTrips,fuel:viewFuel,maintenance:viewMaintenance,
+    outstanding:viewOutstanding,vehicles:viewVehicles,drivers:viewDrivers,customers:viewCustomers,
+    routes:viewRoutes,reports:viewReports,settings:viewSettings}[view]||viewDashboard)(c);
+}
+
+/* ============================ MODAL / TOAST ============================ */
+function openModal(html,wide){
+  const bg=document.getElementById("modalBg");
+  bg.innerHTML=`<div class="modal ${wide?"wide":""}">${html}</div>`;
+  bg.classList.add("open");
+  bg.onclick=e=>{ if(e.target===bg) closeModal(); };
+}
+function closeModal(){ const bg=document.getElementById("modalBg"); bg.classList.remove("open"); bg.innerHTML=""; }
+let toastT;
+function toast(msg,isErr){
+  const el=document.getElementById("toast");
+  el.innerHTML=svg(isErr?ICON.warn:ICON.check)+`<span>${esc(msg)}</span>`;
+  el.style.background=isErr?"var(--red)":"var(--text)";
+  el.style.color=isErr?"#fff":"var(--surface)";
+  el.classList.add("show"); clearTimeout(toastT); toastT=setTimeout(()=>el.classList.remove("show"),2600);
+}
+function confirmModal(msg,onYes){
+  openModal(`<div class="modal-head"><h3>Confirm</h3></div><div class="modal-body">${esc(msg)}</div>
+    <div class="modal-foot"><button class="btn" onclick="closeModal()">Cancel</button>
+    <button class="btn danger" id="cfmYes">Delete</button></div>`);
+  document.getElementById("cfmYes").onclick=()=>{ closeModal(); onYes(); };
+}
+
+/* ============================ GENERIC TABLE HELPERS ============================ */
+function statusTag(s){
+  const map={Active:"green",Inactive:"gray",Closed:"gray",Delivered:"green","In Transit":"blue",
+    "Pickup Done":"purple",Planned:"amber"};
+  return `<span class="tag ${map[s]||"gray"}"><span class="dot"></span>${esc(s||"—")}</span>`;
+}
+function expiryTag(d){ const n=daysUntil(d); if(n===null) return `<span class="tag gray">—</span>`;
+  if(n<0) return `<span class="tag red">Expired</span>`;
+  if(n<=30) return `<span class="tag amber">${n}d left</span>`;
+  return `<span class="tag green">OK</span>`; }
+function rowActions(coll,id){
+  return `<div class="row-actions">
+    <button onclick="openForm('${coll}','${id}')" title="Edit">${svg(ICON.edit)}</button>
+    <button class="del" onclick="delRow('${coll}','${id}')" title="Delete">${svg(ICON.trash)}</button></div>`;
+}
+function delRow(coll,id){
+  const names={vehicles:"vehicle",drivers:"driver",customers:"customer",routes:"route",trips:"trip",fuel:"fuel entry",maintenance:"maintenance record"};
+  confirmModal(`Delete this ${names[coll]||"record"}? This cannot be undone.`,()=>{
+    DB[coll]=DB[coll].filter(x=>x.id!==id); saveDB(); go(currentView); toast("Deleted");
+  });
+}
+function emptyState(msg){ return `<div class="empty">${svg(ICON.report)}<div>${esc(msg)}</div></div>`; }
+/* ============================ FORM SCHEMAS ============================ */
+// type: text|num|date|select|textarea ; opts: array or function for select
+const ynStatus=()=>["Active","Inactive"];
+const FORMS={
+  vehicles:{title:"Vehicle",fields:[
+    {sec:"Identity"},
+    {k:"regNo",l:"Registration Number",t:"text",req:1},{k:"vehNo",l:"Vehicle Number",t:"text"},
+    {k:"type",l:"Vehicle Type",t:"select",opts:["Multi-Axle Trailer","Haulage Truck","Tipper Truck","Container Truck","Tanker","Flatbed"]},
+    {k:"capacity",l:"Capacity (Tons)",t:"num"},{k:"make",l:"Make",t:"text"},{k:"model",l:"Model",t:"text"},
+    {k:"year",l:"Year",t:"num"},{k:"owner",l:"Owner",t:"text"},
+    {sec:"Engine & Fuel"},
+    {k:"fuelType",l:"Fuel Type",t:"select",opts:["Diesel","CNG","LNG","Electric"]},
+    {k:"mileage",l:"Avg Mileage (km/l)",t:"num"},{k:"tankCap",l:"Fuel Tank Capacity (L)",t:"num"},
+    {k:"odometer",l:"Current Odometer (km)",t:"num"},{k:"emi",l:"Monthly EMI",t:"num"},
+    {sec:"Compliance"},
+    {k:"insExpiry",l:"Insurance Expiry",t:"date"},{k:"fitnessExpiry",l:"Fitness Expiry",t:"date"},
+    {k:"permitExpiry",l:"Permit Expiry",t:"date"},{k:"pucExpiry",l:"Pollution (PUC) Expiry",t:"date"},
+    {k:"rc",l:"RC Details",t:"text"},{k:"gps",l:"GPS Enabled",t:"select",opts:["Yes","No"]},
+    {k:"status",l:"Status",t:"select",opts:ynStatus},
+  ]},
+  drivers:{title:"Driver",fields:[
+    {k:"name",l:"Driver Name",t:"text",req:1},{k:"empId",l:"Employee ID",t:"text"},
+    {k:"mobile",l:"Mobile Number",t:"text"},{k:"license",l:"License Number",t:"text"},
+    {k:"licenseExpiry",l:"License Expiry",t:"date"},{k:"aadhaar",l:"Aadhaar / PAN",t:"text"},
+    {k:"address",l:"Address",t:"text",full:1},{k:"emergency",l:"Emergency Contact",t:"text"},
+    {k:"salary",l:"Salary (monthly)",t:"num"},{k:"incentives",l:"Incentives",t:"num"},
+    {k:"assignedVehicle",l:"Assigned Vehicle",t:"select",opts:()=>[{v:"",t:"— Unassigned —"}].concat(DB.vehicles.map(v=>({v:v.id,t:v.regNo})))},
+    {k:"status",l:"Status",t:"select",opts:ynStatus},
+  ]},
+  customers:{title:"Customer",fields:[
+    {k:"name",l:"Customer Name",t:"text",req:1},{k:"gst",l:"GST Number",t:"text"},
+    {k:"contact",l:"Contact Person",t:"text"},{k:"phone",l:"Phone",t:"text"},
+    {k:"email",l:"Email",t:"text"},{k:"address",l:"Address",t:"text",full:1},
+    {k:"paymentTerms",l:"Payment Terms",t:"text"},{k:"creditLimit",l:"Credit Limit",t:"num"},
+    {k:"status",l:"Status",t:"select",opts:ynStatus},
+  ]},
+  routes:{title:"Route",fields:[
+    {k:"pickup",l:"Pickup Location",t:"text",req:1},{k:"drop",l:"Drop Location",t:"text",req:1},
+    {k:"state",l:"State / Corridor",t:"text"},{k:"distance",l:"Distance (km)",t:"num"},
+    {k:"freight",l:"Standard Freight",t:"num"},{k:"estFuel",l:"Estimated Fuel (L)",t:"num"},
+    {k:"estToll",l:"Toll Estimate (per gate)",t:"num"},{k:"travelTime",l:"Est. Travel Time",t:"text"},
+  ]},
+  fuel:{title:"Fuel Entry",fields:[
+    {k:"vehicle",l:"Vehicle",t:"select",req:1,opts:()=>DB.vehicles.map(v=>({v:v.id,t:v.regNo}))},
+    {k:"date",l:"Date",t:"date",req:1},{k:"station",l:"Fuel Station",t:"text"},
+    {k:"litres",l:"Litres",t:"num"},{k:"amount",l:"Amount",t:"num"},
+    {k:"odometer",l:"Odometer (km)",t:"num"},{k:"mileage",l:"Mileage (km/l)",t:"num"},
+  ]},
+  maintenance:{title:"Maintenance",fields:[
+    {k:"vehicle",l:"Vehicle",t:"select",req:1,opts:()=>DB.vehicles.map(v=>({v:v.id,t:v.regNo}))},
+    {k:"date",l:"Service Date",t:"date",req:1},{k:"serviceType",l:"Service Type",t:"text"},
+    {k:"oilChange",l:"Oil Change",t:"select",opts:["No","Yes"]},{k:"tyreChange",l:"Tyre Change",t:"select",opts:["No","Yes"]},
+    {k:"cost",l:"Maintenance Cost",t:"num"},{k:"garage",l:"Garage Details",t:"text"},
+    {k:"nextDue",l:"Next Due Date",t:"date"},{k:"remarks",l:"Remarks",t:"text",full:1},
+  ]},
+};
+
+function fieldHTML(f,val){
+  if(f.sec) return `<div class="fieldset-title">${f.sec}</div>`;
+  const id="f_"+f.k; let inner;
+  if(f.t==="select"){
+    const opts=typeof f.opts==="function"?f.opts():f.opts;
+    inner=`<select id="${id}">`+opts.map(o=>{ const v=typeof o==="object"?o.v:o, t=typeof o==="object"?o.t:o;
+      return `<option value="${esc(v)}" ${String(val)===String(v)?"selected":""}>${esc(t)}</option>`; }).join("")+`</select>`;
+  } else if(f.t==="textarea"){
+    inner=`<textarea id="${id}" rows="2">${esc(val||"")}</textarea>`;
+  } else {
+    const type=f.t==="num"?"number":f.t==="date"?"date":"text";
+    inner=`<input id="${id}" type="${type}" value="${esc(val==null?"":val)}" ${f.req?"required":""}>`;
+  }
+  return `<div class="fld ${f.full?"full":""}"><label>${f.l}${f.req?' <span style="color:var(--red)">*</span>':""}</label>${inner}</div>`;
+}
+function openForm(coll,id){
+  if(coll==="trips") return openTripForm(id);
+  const schema=FORMS[coll]; const rec=id?get(coll,id):{};
+  const body=`<div class="form-grid">${schema.fields.map(f=>fieldHTML(f,rec[f.k])).join("")}</div>`;
+  openModal(`<div class="modal-head"><h3>${id?"Edit":"Add"} ${schema.title}</h3><div class="spacer"></div>
+    <button class="icon-btn" onclick="closeModal()">${svg('<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>')}</button></div>
+    <div class="modal-body">${body}</div>
+    <div class="modal-foot"><button class="btn" onclick="closeModal()">Cancel</button>
+    <button class="btn primary" onclick="saveForm('${coll}','${id||""}')">Save ${schema.title}</button></div>`);
+}
+function saveForm(coll,id){
+  const schema=FORMS[coll]; const rec=id?get(coll,id):{id:uid(coll.slice(0,3))};
+  for(const f of schema.fields){ if(f.sec) continue;
+    let v=document.getElementById("f_"+f.k).value;
+    if(f.req&&!v){ toast(f.l+" is required",1); return; }
+    rec[f.k]=f.t==="num"?(v===""?"":+v):v;
+  }
+  if(!id) DB[coll].push(rec);
+  saveDB(); closeModal(); go(currentView); toast(schema.title+" saved");
+}
+
+/* ============================ MASTER VIEWS ============================ */
+function filterRows(rows,q,keys){ if(!q) return rows; q=q.toLowerCase();
+  return rows.filter(r=>keys.some(k=>(""+(r[k]||"")).toLowerCase().includes(q))); }
+
+function tableView(c,opts){
+  // opts: {coll, cols:[{h,render}], searchKeys, q, addLabel, filterBar}
+  const rows=opts.rows;
+  c.innerHTML=`
+    <div class="toolbar">
+      <div class="search">${svg(ICON.search)}<input id="srch" placeholder="Search ${opts.label||""}..." value="${esc(opts.q||"")}"></div>
+      ${opts.filterBar||""}
+      <div class="spacer" style="flex:1"></div>
+      ${opts.addLabel?`<button class="btn primary" onclick="openForm('${opts.coll}')">${svg(ICON.plus)}${opts.addLabel}</button>`:""}
+    </div>
+    <div class="card"><div class="tbl-wrap">
+      <table class="tbl"><thead><tr>${opts.cols.map(col=>`<th>${col.h}</th>`).join("")}<th></th></tr></thead>
+      <tbody>${rows.length?rows.map(r=>`<tr>${opts.cols.map(col=>`<td>${col.render(r)}</td>`).join("")}<td>${opts.actions!==false?rowActions(opts.coll,r.id):""}</td></tr>`).join(""):`<tr><td colspan="${opts.cols.length+1}">${emptyState("No records found")}</td></tr>`}</tbody></table>
+    </div></div>`;
+  const s=document.getElementById("srch");
+  if(s) s.oninput=()=>{ opts.onSearch(s.value); };
+}
+
+let _q={};
+function viewVehicles(c){
+  const q=_q.vehicles||"";
+  const rows=filterRows(DB.vehicles,q,["regNo","make","model","type","owner"]);
+  tableView(c,{coll:"vehicles",label:"vehicles",q,addLabel:"Add Vehicle",rows,
+    onSearch:v=>{_q.vehicles=v;viewVehicles(c);},
+    cols:[
+      {h:"Reg. No",render:r=>`<b>${esc(r.regNo)}</b>`},
+      {h:"Type",render:r=>esc(r.type||"—")},
+      {h:"Cap.",render:r=>(r.capacity||"—")+" T"},
+      {h:"Make / Model",render:r=>esc((r.make||"")+" "+(r.model||""))},
+      {h:"Odometer",render:r=>`<span class="num">${num(r.odometer)}</span> km`},
+      {h:"Insurance",render:r=>expiryTag(r.insExpiry)},
+      {h:"Fitness",render:r=>expiryTag(r.fitnessExpiry)},
+      {h:"Permit",render:r=>expiryTag(r.permitExpiry)},
+      {h:"PUC",render:r=>expiryTag(r.pucExpiry)},
+      {h:"GPS",render:r=>r.gps==="Yes"?`<span class="tag green">GPS</span>`:`<span class="tag gray">No</span>`},
+      {h:"Status",render:r=>statusTag(r.status)},
+    ]});
+}
+function viewDrivers(c){
+  const q=_q.drivers||"";
+  const rows=filterRows(DB.drivers,q,["name","empId","mobile","license"]);
+  tableView(c,{coll:"drivers",label:"drivers",q,addLabel:"Add Driver",rows,
+    onSearch:v=>{_q.drivers=v;viewDrivers(c);},
+    cols:[
+      {h:"Name",render:r=>`<b>${esc(r.name)}</b>`},{h:"Emp ID",render:r=>esc(r.empId||"—")},
+      {h:"Mobile",render:r=>esc(r.mobile||"—")},{h:"License",render:r=>esc(r.license||"—")},
+      {h:"Lic. Expiry",render:r=>`${fmtDate(r.licenseExpiry)} ${expiryTag(r.licenseExpiry)}`},
+      {h:"Assigned",render:r=>r.assignedVehicle?`<span class="tag blue">${esc(vehicleLabel(r.assignedVehicle))}</span>`:`<span class="tag gray">Unassigned</span>`},
+      {h:"Salary",render:r=>inr(r.salary)},{h:"Status",render:r=>statusTag(r.status)},
+    ]});
+}
+function viewCustomers(c){
+  const q=_q.customers||"";
+  const rows=filterRows(DB.customers,q,["name","gst","contact","phone"]);
+  tableView(c,{coll:"customers",label:"customers",q,addLabel:"Add Customer",rows,
+    onSearch:v=>{_q.customers=v;viewCustomers(c);},
+    cols:[
+      {h:"Customer",render:r=>`<b>${esc(r.name)}</b>`},{h:"GST",render:r=>esc(r.gst||"—")},
+      {h:"Contact",render:r=>esc(r.contact||"—")},{h:"Phone",render:r=>esc(r.phone||"—")},
+      {h:"Terms",render:r=>esc(r.paymentTerms||"—")},{h:"Credit Limit",render:r=>inr(r.creditLimit)},
+      {h:"Status",render:r=>statusTag(r.status)},
+    ]});
+}
+function viewRoutes(c){
+  const q=_q.routes||"";
+  const rows=filterRows(DB.routes,q,["pickup","drop","state"]);
+  tableView(c,{coll:"routes",label:"routes",q,addLabel:"Add Route",rows,
+    onSearch:v=>{_q.routes=v;viewRoutes(c);},
+    cols:[
+      {h:"Lane",render:r=>`<b>${esc(r.pickup)}</b> → <b>${esc(r.drop)}</b>`},
+      {h:"Corridor",render:r=>esc(r.state||"—")},{h:"Distance",render:r=>`<span class="num">${num(r.distance)}</span> km`},
+      {h:"Std Freight",render:r=>inr(r.freight)},{h:"Est. Fuel",render:r=>num(r.estFuel)+" L"},
+      {h:"Toll",render:r=>inr(r.estToll)},{h:"Travel Time",render:r=>esc(r.travelTime||"—")},
+    ]});
+}
+/* ============================ DISTANCE / MAPS ============================ */
+// Offline distance table (km) for common Indian city pairs — fallback when no Maps key.
+const DIST_TABLE={
+  "dhanbad|kolkata":260,"bokaro|jamshedpur":165,"dimapur|guwahati":290,"ranchi|patna":330,
+  "jamshedpur|haldia":310,"bokaro|kolkata":290,"dhanbad|patna":210,"ranchi|kolkata":410,
+  "kolkata|guwahati":1020,"delhi|kolkata":1490,"mumbai|pune":150,"dhanbad|ranchi":160,
+  "bokaro|dhanbad":55,"jamshedpur|kolkata":290,"patna|kolkata":580,"guwahati|siliguri":520};
+function lookupDistance(a,b){
+  if(!a||!b) return null; a=a.trim().toLowerCase(); b=b.trim().toLowerCase();
+  return DIST_TABLE[a+"|"+b]??DIST_TABLE[b+"|"+a]??null;
+}
+function mapsReady(){ return !!(SETT.mapsKey&&window.google&&google.maps); }
+function loadGoogleMaps(){
+  if(!SETT.mapsKey||window.google) return;
+  const s=document.createElement("script");
+  s.src=`https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(SETT.mapsKey)}&libraries=places`;
+  s.async=true; document.head.appendChild(s);
+}
+
+/* ============================ TRIP MODULE ============================ */
+function viewTrips(c){
+  const f=_q.tripFilter||{};
+  let rows=DB.trips.slice().reverse();
+  if(f.vehicle) rows=rows.filter(t=>t.vehicle===f.vehicle);
+  if(f.status) rows=rows.filter(t=>t.status===f.status);
+  if(f.customer) rows=rows.filter(t=>t.customer===f.customer);
+  if(_q.trips){ const q=_q.trips.toLowerCase();
+    rows=rows.filter(t=>[t.tripId,t.pickup,t.drop,vehicleLabel(t.vehicle),customerLabel(t.customer),t.material].some(x=>(""+(x||"")).toLowerCase().includes(q))); }
+  const tot=sumFinance(rows);
+  const filterBar=`
+    <select class="filter" id="fVeh"><option value="">All Vehicles</option>${DB.vehicles.map(v=>`<option value="${v.id}" ${f.vehicle===v.id?"selected":""}>${esc(v.regNo)}</option>`).join("")}</select>
+    <select class="filter" id="fCus"><option value="">All Customers</option>${DB.customers.map(v=>`<option value="${v.id}" ${f.customer===v.id?"selected":""}>${esc(v.name)}</option>`).join("")}</select>
+    <select class="filter" id="fSt"><option value="">All Status</option>${["Planned","Pickup Done","In Transit","Delivered","Closed"].map(s=>`<option ${f.status===s?"selected":""}>${s}</option>`).join("")}</select>`;
+  c.innerHTML=`
+    <div class="stat-grid" style="grid-template-columns:repeat(auto-fill,minmax(165px,1fr))">
+      ${miniStat("Trips (filtered)",rows.length,"trip","blue")}
+      ${miniStat("Revenue",inrShort(tot.rev),"cash","green")}
+      ${miniStat("Net Profit",inrShort(tot.profit),"dash",tot.profit>=0?"green":"red")}
+      ${miniStat("Total KM",num(tot.dist),"route","purple")}
+      ${miniStat("Empty KM",num(tot.emptyKm),"map","amber")}
+    </div>
+    <div class="toolbar">
+      <div class="search">${svg(ICON.search)}<input id="srch" placeholder="Search trips..." value="${esc(_q.trips||"")}"></div>
+      ${filterBar}
+      <div class="spacer" style="flex:1"></div>
+      <button class="btn primary" onclick="openTripForm()">${svg(ICON.plus)}New Trip</button>
+    </div>
+    <div class="card"><div class="tbl-wrap">
+      <table class="tbl"><thead><tr>
+        <th>Trip ID</th><th>Date</th><th>Vehicle</th><th>Route</th><th>Customer</th>
+        <th>KM</th><th>Empty</th><th>Revenue</th><th>Cost</th><th>Profit</th><th>Margin</th><th>₹/km</th><th>Status</th><th></th>
+      </tr></thead><tbody>${rows.length?rows.map(t=>{ const x=tripFinance(t); return `<tr style="cursor:pointer" onclick="tripDetail('${t.id}')">
+        <td><b>${esc(t.tripId)}</b></td><td>${fmtDate(t.pickupDate)}</td>
+        <td>${esc(vehicleLabel(t.vehicle))}</td><td>${esc(t.pickup)} → ${esc(t.drop)}</td>
+        <td>${esc(customerLabel(t.customer))}</td><td class="num">${num(x.dist)}</td>
+        <td class="num">${num(x.emptyKm)}</td><td class="num">${inr(x.rev)}</td>
+        <td class="num">${inr(x.totalCost)}</td><td class="num ${x.profit>=0?"pos":"neg"}"><b>${inr(x.profit)}</b></td>
+        <td class="num ${x.margin>=0?"pos":"neg"}">${pct(x.margin)}</td><td class="num">${x.profitPerKm.toFixed(1)}</td>
+        <td>${statusTag(t.status)}</td>
+        <td onclick="event.stopPropagation()">${rowActions("trips",t.id)}</td></tr>`; }).join(""):`<tr><td colspan="14">${emptyState("No trips found")}</td></tr>`}</tbody></table>
+    </div></div>`;
+  document.getElementById("srch").oninput=e=>{ _q.trips=e.target.value; viewTrips(c); };
+  const setF=(k,id)=>document.getElementById(id).onchange=e=>{ _q.tripFilter={..._q.tripFilter,[k]:e.target.value}; viewTrips(c); };
+  setF("vehicle","fVeh"); setF("customer","fCus"); setF("status","fSt");
+}
+function miniStat(label,value,icon,color){
+  return `<div class="stat"><div class="ic" style="background:var(--${color}-soft);color:var(--${color})">${svg(ICON[icon])}</div>
+    <div class="label">${label}</div><div class="value num">${value}</div></div>`;
+}
+
+function tripDetail(id){
+  const t=get("trips",id); if(!t) return; const x=tripFinance(t);
+  const costRow=(l,v)=>`<tr><td>${l}</td><td class="num" style="text-align:right">${inr(v)}</td></tr>`;
+  openModal(`<div class="modal-head"><h3>${esc(t.tripId)} · ${esc(t.pickup)} → ${esc(t.drop)}</h3><div class="spacer"></div>
+    ${statusTag(t.status)}&nbsp;
+    <button class="btn sm" onclick="closeModal();openTripForm('${id}')">${svg(ICON.edit)}Edit</button>
+    <button class="icon-btn" onclick="closeModal()">${svg('<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>')}</button></div>
+  <div class="modal-body">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+      <div>
+        <div class="fieldset-title">Trip & Cargo</div>
+        <dl class="kv" style="margin:12px 0 18px">
+          <dt>Vehicle</dt><dd>${esc(vehicleLabel(t.vehicle))}</dd>
+          <dt>Driver</dt><dd>${esc(driverLabel(t.driver))}</dd>
+          <dt>Customer</dt><dd>${esc(customerLabel(t.customer))}</dd>
+          <dt>Pickup</dt><dd>${fmtDate(t.pickupDate)} ${esc(t.pickupTime||"")}</dd>
+          <dt>Delivery</dt><dd>${fmtDate(t.deliveryDate)} ${esc(t.deliveryTime||"")}</dd>
+          <dt>Material</dt><dd>${esc(t.material||"—")}</dd>
+          <dt>Weight</dt><dd>${esc(t.weight||"—")} T</dd>
+          <dt>Invoice / LR</dt><dd>${esc(t.invoiceNo||"—")} / ${esc(t.lrNo||"—")}</dd>
+        </dl>
+        <div class="fieldset-title">Distance</div>
+        <dl class="kv" style="margin-top:12px">
+          <dt>Total Distance</dt><dd class="num">${num(x.dist)} km</dd>
+          <dt>Loaded</dt><dd class="num">${num(x.loadedKm)} km</dd>
+          <dt>Empty Running</dt><dd class="num neg">${num(x.emptyKm)} km</dd>
+          <dt>Mileage</dt><dd class="num">${esc(t.mileage||"—")} km/l</dd>
+          <dt>Fuel Consumed</dt><dd class="num">${num(t.fuelConsumed)} L</dd>
+        </dl>
+      </div>
+      <div>
+        <div class="fieldset-title">Cost & Revenue Engine</div>
+        <table class="tbl" style="margin-top:10px">
+          <tr><td><b>Revenue (Freight)</b></td><td class="num pos" style="text-align:right"><b>${inr(x.rev)}</b></td></tr>
+          ${costRow("Less: Fuel Cost",x.fuel)}
+          ${costRow("Less: Driver Allowance",x.driverAllow)}
+          ${costRow("Less: Toll",x.toll)}
+          ${costRow("Less: Loading / Unloading",x.load+x.unload)}
+          ${costRow("Less: Maintenance Alloc.",x.maint)}
+          ${costRow("Less: Insurance Alloc.",x.ins)}
+          ${costRow("Less: Permit Alloc.",x.permit)}
+          ${costRow("Less: Misc. Expenses",x.other)}
+          <tr style="border-top:2px solid var(--border)"><td><b>Net Profit</b></td><td class="num ${x.profit>=0?"pos":"neg"}" style="text-align:right"><b>${inr(x.profit)}</b></td></tr>
+        </table>
+        <div class="stat-grid" style="grid-template-columns:1fr 1fr;margin-top:16px;gap:10px">
+          ${miniStat("Gross Margin",pct(x.margin),"dash",x.margin>=0?"green":"red")}
+          ${miniStat("Profit / km",inr(x.profitPerKm),"route",x.profitPerKm>=0?"green":"red")}
+          ${miniStat("Revenue / km",inr(x.revPerKm),"cash","blue")}
+          ${miniStat("Cost / km",inr(x.costPerKm),"fuel","amber")}
+        </div>
+        <div class="fieldset-title" style="margin-top:18px">Payment</div>
+        <dl class="kv" style="margin-top:12px">
+          <dt>Freight Charged</dt><dd class="num">${inr(t.freight)}</dd>
+          <dt>Advance Received</dt><dd class="num">${inr(t.advance)}</dd>
+          <dt>Balance Due</dt><dd class="num ${(+t.remaining||0)>0?"neg":""}">${inr(t.remaining)}</dd>
+        </dl>
+      </div>
+    </div>
+    ${t.remarks?`<div style="margin-top:18px"><div class="fieldset-title">Remarks</div><p style="margin-top:8px;color:var(--text-soft)">${esc(t.remarks)}</p></div>`:""}
+  </div>`,true);
+}
+/* ---------- Trip Form (custom, with live engine) ---------- */
+function openTripForm(id){
+  const t=id?get("trips",id):{tripId:nextTripId(),status:"Planned",pickupTime:"08:00",deliveryTime:"18:00"};
+  const vopts=DB.vehicles.map(v=>`<option value="${v.id}" ${t.vehicle===v.id?"selected":""}>${esc(v.regNo)}</option>`).join("");
+  const dopts=DB.drivers.map(d=>`<option value="${d.id}" ${t.driver===d.id?"selected":""}>${esc(d.name)}</option>`).join("");
+  const copts=DB.customers.map(cu=>`<option value="${cu.id}" ${t.customer===cu.id?"selected":""}>${esc(cu.name)}</option>`).join("");
+  const ropts=DB.routes.map(r=>`<option value="${r.id}">${esc(r.pickup)} → ${esc(r.drop)} (${r.distance}km)</option>`).join("");
+  const fld=(k,l,type,extra)=>`<div class="fld"><label>${l}</label><input id="t_${k}" type="${type||"text"}" value="${esc(t[k]==null?"":t[k])}" ${extra||""}></div>`;
+  openModal(`<div class="modal-head"><h3>${id?"Edit Trip "+esc(t.tripId):"New Trip"}</h3><div class="spacer"></div>
+    <button class="icon-btn" onclick="closeModal()">${svg('<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>')}</button></div>
+  <div class="modal-body">
+    <div class="form-grid three">
+      <div class="fld"><label>Trip ID</label><input id="t_tripId" value="${esc(t.tripId)}" readonly style="opacity:.7"></div>
+      <div class="fld"><label>Vehicle *</label><select id="t_vehicle"><option value="">Select</option>${vopts}</select></div>
+      <div class="fld"><label>Driver</label><select id="t_driver"><option value="">Select</option>${dopts}</select></div>
+      <div class="fld"><label>Customer</label><select id="t_customer"><option value="">Select</option>${copts}</select></div>
+      <div class="fld"><label>Use Saved Route</label><select id="t_route"><option value="">— pick to autofill —</option>${ropts}</select></div>
+      <div class="fld"><label>Status</label><select id="t_status">${["Planned","Pickup Done","In Transit","Delivered","Closed"].map(s=>`<option ${t.status===s?"selected":""}>${s}</option>`).join("")}</select></div>
+    </div>
+    <div class="fieldset-title" style="margin-top:16px">Locations & Schedule</div>
+    <div class="form-grid three" style="margin-top:10px">
+      ${fld("pickup","Pickup Location")}${fld("drop","Drop Location")}${fld("state","State / Corridor")}
+      ${fld("pickupDate","Pickup Date","date")}${fld("pickupTime","Pickup Time","time")}
+      ${fld("deliveryDate","Delivery Date","date")}
+    </div>
+    <div id="distHelp" class="alert-banner" style="display:none"></div>
+    <div class="fieldset-title" style="margin-top:8px">Cargo</div>
+    <div class="form-grid three" style="margin-top:10px">
+      ${fld("material","Material")}${fld("weight","Weight (T)","number")}${fld("quantity","Quantity")}
+      ${fld("invoiceNo","Invoice No")}${fld("lrNo","LR No")}${fld("deliveryTime","Delivery Time","time")}
+    </div>
+    <div class="fieldset-title" style="margin-top:8px">Operational (Odometer & Distance)</div>
+    <div class="form-grid three" style="margin-top:10px">
+      ${fld("startOdo","Starting Odometer","number","oninput=calcTrip()")}
+      ${fld("endOdo","Ending Odometer","number","oninput=calcTrip()")}
+      ${fld("totalDistance","Total Distance (km)","number","oninput=calcTrip()")}
+      ${fld("loadedDistance","Loaded Distance (km)","number","oninput=calcTrip()")}
+      ${fld("emptyDistance","Empty Distance (km)","number","oninput=calcTrip()")}
+      ${fld("fuelConsumed","Fuel Consumed (L)","number","oninput=calcTrip()")}
+    </div>
+    <div class="fieldset-title" style="margin-top:8px">Financials</div>
+    <div class="form-grid three" style="margin-top:10px">
+      ${fld("freight","Freight Charged","number","oninput=calcTrip()")}
+      ${fld("advance","Advance Received","number","oninput=calcTrip()")}
+      <div class="fld"><label>Remaining Payment</label><input id="t_remaining" readonly style="opacity:.7"></div>
+      ${fld("fuelCost","Fuel Cost","number","oninput=calcTrip()")}
+      ${fld("tollCost","Toll Cost","number","oninput=calcTrip()")}
+      ${fld("driverAllow","Driver Allowance","number","oninput=calcTrip()")}
+      ${fld("loadingCharges","Loading Charges","number","oninput=calcTrip()")}
+      ${fld("unloadingCharges","Unloading Charges","number","oninput=calcTrip()")}
+      ${fld("otherExpenses","Other Expenses","number","oninput=calcTrip()")}
+    </div>
+    <div class="fld full" style="margin-top:12px"><label>Remarks</label><textarea id="t_remarks" rows="2">${esc(t.remarks||"")}</textarea></div>
+    <div class="card" style="margin-top:16px;background:var(--surface-2)"><div class="card-body">
+      <div class="stat-grid" style="grid-template-columns:repeat(auto-fill,minmax(130px,1fr));margin:0" id="liveCalc"></div>
+    </div></div>
+  </div>
+  <div class="modal-foot"><button class="btn" onclick="closeModal()">Cancel</button>
+    <button class="btn primary" onclick="saveTrip('${id||""}')">Save Trip</button></div>`,true);
+  // route autofill
+  document.getElementById("t_route").onchange=e=>{ const r=get("routes",e.target.value); if(!r) return;
+    setV("t_pickup",r.pickup);setV("t_drop",r.drop);setV("t_state",r.state);setV("t_loadedDistance",r.distance);
+    setV("t_freight",r.freight);setV("t_tollCost",r.estToll); autoDistance(); calcTrip(); };
+  ["t_pickup","t_drop"].forEach(idn=>document.getElementById(idn).onblur=autoDistance);
+  calcTrip();
+}
+function setV(id,v){ const el=document.getElementById(id); if(el) el.value=v==null?"":v; }
+function gv(id){ const el=document.getElementById(id); return el?el.value:""; }
+function gn(id){ return +gv(id)||0; }
+
+function autoDistance(){
+  const a=gv("t_pickup"), b=gv("t_drop"); const help=document.getElementById("distHelp"); if(!help) return;
+  if(mapsReady()){
+    const svc=new google.maps.DistanceMatrixService();
+    svc.getDistanceMatrix({origins:[a+", India"],destinations:[b+", India"],travelMode:"DRIVING"},(res,st)=>{
+      if(st==="OK"&&res.rows[0].elements[0].status==="OK"){
+        const km=Math.round(res.rows[0].elements[0].distance.value/1000);
+        if(!gn("t_loadedDistance")) setV("t_loadedDistance",km);
+        help.style.display="flex"; help.className="alert-banner";
+        help.innerHTML=svg(ICON.map)+`Google Maps: ${a} → ${b} ≈ ${km} km, ${res.rows[0].elements[0].duration.text}. Loaded distance filled.`;
+        calcTrip();
+      }
+    });
+    return;
+  }
+  const km=lookupDistance(a,b);
+  if(km){ if(!gn("t_loadedDistance")) setV("t_loadedDistance",km);
+    help.style.display="flex"; help.className="alert-banner warn";
+    help.innerHTML=svg(ICON.map)+`Offline estimate: ${a} → ${b} ≈ ${km} km (no Maps key set). Loaded distance filled — adjust if needed.`;
+    calcTrip();
+  } else if(a&&b){ help.style.display="flex"; help.className="alert-banner warn";
+    help.innerHTML=svg(ICON.warn)+`No saved distance for ${a} → ${b}. Enter distance manually, or add a Google Maps key in Settings for auto-calc.`;
+  } else help.style.display="none";
+}
+function calcTrip(){
+  if(!document.getElementById("t_freight")) return;
+  // derive total distance from odometer if present
+  const so=gn("t_startOdo"), eo=gn("t_endOdo");
+  if(eo>so&&so>0){ setV("t_totalDistance",eo-so); }
+  let total=gn("t_totalDistance"), loaded=gn("t_loadedDistance"), empty=gn("t_emptyDistance");
+  if(total&&loaded&&!empty){ empty=Math.max(0,total-loaded); setV("t_emptyDistance",empty); }
+  if(loaded&&empty&&!total){ total=loaded+empty; setV("t_totalDistance",total); }
+  setV("t_remaining", gn("t_freight")-gn("t_advance"));
+  // build temp record for engine
+  const tmp={freight:gn("t_freight"),fuelCost:gn("t_fuelCost"),tollCost:gn("t_tollCost"),
+    driverAllow:gn("t_driverAllow"),loadingCharges:gn("t_loadingCharges"),unloadingCharges:gn("t_unloadingCharges"),
+    otherExpenses:gn("t_otherExpenses"),totalDistance:total,loadedDistance:loaded,emptyDistance:empty,
+    pickupDate:gv("t_pickupDate"),deliveryDate:gv("t_deliveryDate")};
+  const x=tripFinance(tmp);
+  const emptyFuelCost=Math.round(empty/3.5*(+SETT.fuelPrice||92)); // est empty-run fuel
+  document.getElementById("liveCalc").innerHTML=
+    miniStat("Revenue",inrShort(x.rev),"cash","green")+
+    miniStat("Total Cost",inrShort(x.totalCost),"fuel","amber")+
+    miniStat("Net Profit",inrShort(x.profit),"dash",x.profit>=0?"green":"red")+
+    miniStat("Margin",pct(x.margin),"report",x.margin>=0?"green":"red")+
+    miniStat("Profit/km",x.dist?inr(x.profitPerKm):"—","route",x.profitPerKm>=0?"green":"red")+
+    miniStat("Empty-run Fuel",inrShort(emptyFuelCost),"map","red");
+}
+function saveTrip(id){
+  const v=gv("t_vehicle"); if(!v){ toast("Vehicle is required",1); return; }
+  const rec=id?get("trips",id):{id:uid("trp")};
+  const keys=["tripId","vehicle","driver","customer","pickup","drop","state","pickupDate","pickupTime",
+    "deliveryDate","deliveryTime","material","quantity","invoiceNo","lrNo","status","remarks"];
+  keys.forEach(k=>rec[k]=gv("t_"+k));
+  ["weight","freight","advance","fuelCost","tollCost","driverAllow","loadingCharges","unloadingCharges",
+   "otherExpenses","startOdo","endOdo","totalDistance","loadedDistance","emptyDistance","fuelConsumed"]
+   .forEach(k=>rec[k]=gn("t_"+k));
+  rec.remaining=gn("t_freight")-gn("t_advance");
+  rec.mileage=rec.fuelConsumed?(rec.totalDistance/rec.fuelConsumed).toFixed(2):(t=>t)(rec.mileage||"");
+  if(!id) DB.trips.push(rec);
+  // update vehicle odometer
+  const veh=get("vehicles",v); if(veh&&rec.endOdo>(+veh.odometer||0)) veh.odometer=rec.endOdo;
+  saveDB(); closeModal(); go("trips"); toast("Trip saved");
+}
+/* ============================ FUEL MODULE ============================ */
+function viewFuel(c){
+  const q=_q.fuel||"";
+  let rows=DB.fuel.slice().sort((a,b)=>(b.date||"").localeCompare(a.date||""));
+  rows=rows.filter(r=>!q||[vehicleLabel(r.vehicle),r.station].some(x=>(""+(x||"")).toLowerCase().includes(q.toLowerCase())));
+  const totL=rows.reduce((s,r)=>s+(+r.litres||0),0), totA=rows.reduce((s,r)=>s+(+r.amount||0),0);
+  const avgMil=rows.length?(rows.reduce((s,r)=>s+(+r.mileage||0),0)/rows.filter(r=>+r.mileage).length||0):0;
+  c.innerHTML=`
+    <div class="stat-grid" style="grid-template-columns:repeat(auto-fill,minmax(180px,1fr))">
+      ${miniStat("Refuels",rows.length,"fuel","blue")}
+      ${miniStat("Total Litres",num(Math.round(totL)),"fuel","purple")}
+      ${miniStat("Fuel Spend",inrShort(totA),"cash","amber")}
+      ${miniStat("Avg Mileage",avgMil.toFixed(2)+" km/l","route","green")}
+    </div>`+tableShell("fuel","fuel stations","Add Fuel Entry",rows,
+    [["Date",r=>fmtDate(r.date)],["Vehicle",r=>`<b>${esc(vehicleLabel(r.vehicle))}</b>`],
+     ["Station",r=>esc(r.station||"—")],["Litres",r=>`<span class="num">${num(r.litres)}</span> L`],
+     ["Amount",r=>inr(r.amount)],["₹/Litre",r=>r.litres?inr((+r.amount||0)/(+r.litres)):"—"],
+     ["Odometer",r=>`<span class="num">${num(r.odometer)}</span>`],["Mileage",r=>(r.mileage||"—")+" km/l"]],c,viewFuel);
+}
+/* ============================ MAINTENANCE MODULE ============================ */
+function viewMaintenance(c){
+  const q=_q.maintenance||"";
+  let rows=DB.maintenance.slice().sort((a,b)=>(b.date||"").localeCompare(a.date||""));
+  rows=rows.filter(r=>!q||[vehicleLabel(r.vehicle),r.serviceType,r.garage].some(x=>(""+(x||"")).toLowerCase().includes(q.toLowerCase())));
+  const tot=rows.reduce((s,r)=>s+(+r.cost||0),0);
+  const dueSoon=DB.maintenance.filter(r=>{ const n=daysUntil(r.nextDue); return n!==null&&n<=15; }).length;
+  // upcoming compliance renewals across fleet
+  const renewals=[];
+  DB.vehicles.forEach(v=>{ [["Insurance",v.insExpiry],["Fitness",v.fitnessExpiry],["Permit",v.permitExpiry],["PUC",v.pucExpiry]].forEach(([t,d])=>{
+    const n=daysUntil(d); if(n!==null&&n<=45) renewals.push({veh:v.regNo,type:t,date:d,n}); }); });
+  renewals.sort((a,b)=>a.n-b.n);
+  const banner=renewals.length?`<div class="alert-banner warn">${svg(ICON.warn)}${renewals.length} document renewal(s) due within 45 days — see panel below.</div>`:"";
+  c.innerHTML=`
+    <div class="stat-grid" style="grid-template-columns:repeat(auto-fill,minmax(180px,1fr))">
+      ${miniStat("Records",rows.length,"wrench","blue")}
+      ${miniStat("Maint. Cost",inrShort(tot),"cash","amber")}
+      ${miniStat("Service Due ≤15d",dueSoon,"warn","red")}
+      ${miniStat("Renewals ≤45d",renewals.length,"report","purple")}
+    </div>${banner}`+
+    tableShell("maintenance","service / garage","Add Maintenance",rows,
+    [["Date",r=>fmtDate(r.date)],["Vehicle",r=>`<b>${esc(vehicleLabel(r.vehicle))}</b>`],
+     ["Service Type",r=>esc(r.serviceType||"—")],["Oil",r=>r.oilChange==="Yes"?'<span class="tag green">Yes</span>':"—"],
+     ["Tyre",r=>r.tyreChange==="Yes"?'<span class="tag green">Yes</span>':"—"],["Cost",r=>inr(r.cost)],
+     ["Garage",r=>esc(r.garage||"—")],["Next Due",r=>`${fmtDate(r.nextDue)} ${expiryTag(r.nextDue)}`]],c,viewMaintenance);
+  if(renewals.length){
+    const panel=document.createElement("div"); panel.className="card"; panel.style.marginTop="16px";
+    panel.innerHTML=`<div class="card-head"><h3>Upcoming Document Renewals</h3></div>
+      <div class="tbl-wrap short"><table class="tbl"><thead><tr><th>Vehicle</th><th>Document</th><th>Expiry</th><th>Status</th></tr></thead>
+      <tbody>${renewals.map(r=>`<tr><td><b>${esc(r.veh)}</b></td><td>${r.type}</td><td>${fmtDate(r.date)}</td><td>${r.n<0?'<span class="tag red">Expired</span>':`<span class="tag amber">${r.n}d left</span>`}</td></tr>`).join("")}</tbody></table></div>`;
+    c.appendChild(panel);
+  }
+}
+/* generic table shell used by fuel/maintenance */
+function tableShell(coll,searchLabel,addLabel,rows,cols,c,reRender){
+  const q=_q[coll]||"";
+  const html=`<div class="toolbar">
+      <div class="search">${svg(ICON.search)}<input id="srch" placeholder="Search ${searchLabel}..." value="${esc(q)}"></div>
+      <div class="spacer" style="flex:1"></div>
+      <button class="btn primary" onclick="openForm('${coll}')">${svg(ICON.plus)}${addLabel}</button>
+    </div>
+    <div class="card"><div class="tbl-wrap">
+      <table class="tbl"><thead><tr>${cols.map(c2=>`<th>${c2[0]}</th>`).join("")}<th></th></tr></thead>
+      <tbody>${rows.length?rows.map(r=>`<tr>${cols.map(c2=>`<td>${c2[1](r)}</td>`).join("")}<td>${rowActions(coll,r.id)}</td></tr>`).join(""):`<tr><td colspan="${cols.length+1}">${emptyState("No records found")}</td></tr>`}</tbody></table>
+    </div></div>`;
+  const wrap=document.createElement("div"); wrap.innerHTML=html;
+  c.appendChild(wrap);
+  wrap.querySelector("#srch").oninput=e=>{ _q[coll]=e.target.value; reRender(c); };
+  return html;
+}
+/* ============================ OUTSTANDING PAYMENTS ============================ */
+function viewOutstanding(c){
+  // aggregate unpaid balances from trips by customer
+  const byCust={};
+  DB.trips.forEach(t=>{ const bal=+t.remaining||0; if(bal<=0) return;
+    const cid=t.customer||"_"; if(!byCust[cid]) byCust[cid]={cid,trips:0,billed:0,received:0,pending:0,items:[]};
+    const o=byCust[cid]; o.trips++; o.billed+=(+t.freight||0); o.received+=(+t.advance||0); o.pending+=bal;
+    o.items.push(t); });
+  const rows=Object.values(byCust).sort((a,b)=>b.pending-a.pending);
+  const totPending=rows.reduce((s,r)=>s+r.pending,0);
+  const totBilled=rows.reduce((s,r)=>s+r.billed,0);
+  c.innerHTML=`
+    <div class="stat-grid" style="grid-template-columns:repeat(auto-fill,minmax(190px,1fr))">
+      ${miniStat("Total Outstanding",inrShort(totPending),"cash","red")}
+      ${miniStat("Customers w/ Dues",rows.length,"cust","amber")}
+      ${miniStat("Total Billed (open)",inrShort(totBilled),"report","blue")}
+      ${miniStat("Open Trips",rows.reduce((s,r)=>s+r.trips,0),"trip","purple")}
+    </div>
+    <div class="card"><div class="tbl-wrap">
+      <table class="tbl"><thead><tr><th>Customer</th><th>Open Trips</th><th>Billed</th><th>Received</th><th>Pending</th><th>Credit Limit</th><th>Exposure</th></tr></thead>
+      <tbody>${rows.length?rows.map(r=>{ const cu=get("customers",r.cid); const limit=+(cu&&cu.creditLimit)||0;
+        const over=limit&&r.pending>limit; return `<tr>
+        <td><b>${esc(customerLabel(r.cid))}</b></td><td class="num">${r.trips}</td>
+        <td class="num">${inr(r.billed)}</td><td class="num">${inr(r.received)}</td>
+        <td class="num neg"><b>${inr(r.pending)}</b></td><td class="num">${limit?inr(limit):"—"}</td>
+        <td>${limit?`<div class="mini-bar"><i style="width:${Math.min(100,r.pending/limit*100)}%;background:${over?"var(--red)":"var(--green)"}"></i></div>${over?'<span class="tag red" style="margin-top:4px">Over limit</span>':""}`:"—"}</td>
+      </tr>`; }).join(""):`<tr><td colspan="7">${emptyState("No outstanding payments — all trips settled")}</td></tr>`}</tbody></table>
+    </div></div>`;
+}
+/* ============================ DASHBOARD ============================ */
+let _dash={vehicle:"",customer:"",from:"",to:""};
+function dashTrips(){
+  return DB.trips.filter(t=>{
+    if(_dash.vehicle&&t.vehicle!==_dash.vehicle) return false;
+    if(_dash.customer&&t.customer!==_dash.customer) return false;
+    if(_dash.from&&(t.pickupDate||"")<_dash.from) return false;
+    if(_dash.to&&(t.pickupDate||"")>_dash.to) return false;
+    return true;
+  });
+}
+function monthKey(d){ return (d||"").slice(0,7); }
+function chartColors(){ const cs=getComputedStyle(document.body);
+  return {grid:cs.getPropertyValue("--border"),text:cs.getPropertyValue("--text-soft"),
+    primary:cs.getPropertyValue("--primary"),green:cs.getPropertyValue("--green"),red:cs.getPropertyValue("--red"),
+    amber:cs.getPropertyValue("--amber"),purple:cs.getPropertyValue("--purple")}; }
+const PALETTE=["#2f6bff","#13a97b","#f5a524","#7c5cff","#e5484d","#00b8d9","#ff77a8","#36b37e"];
+
+function viewDashboard(c){
+  const trips=dashTrips();
+  const tot=sumFinance(trips);
+  const closed=trips.filter(t=>t.status==="Closed"||t.status==="Delivered");
+  const activeV=DB.vehicles.filter(v=>v.status==="Active").length;
+  const onRoute=new Set(DB.trips.filter(t=>t.status==="In Transit"||t.status==="Pickup Done").map(t=>t.vehicle)).size;
+  const idle=Math.max(0,activeV-onRoute);
+  const months=[...new Set(DB.trips.map(t=>monthKey(t.pickupDate)).filter(Boolean))].sort();
+  const thisMonth=months[months.length-1]||"";
+  const mTrips=trips.filter(t=>monthKey(t.pickupDate)===thisMonth);
+  const mFin=sumFinance(mTrips);
+  const avgMil=(()=>{ const a=DB.trips.filter(t=>+t.mileage); return a.length?(a.reduce((s,t)=>s+ +t.mileage,0)/a.length):0; })();
+
+  const stat=(label,value,icon,color,delta)=>`<div class="stat">
+    <div class="ic" style="background:var(--${color}-soft);color:var(--${color})">${svg(ICON[icon])}</div>
+    <div class="label">${label}</div><div class="value num">${value}</div>${delta||""}</div>`;
+
+  c.innerHTML=`
+    <div class="card" style="margin-bottom:18px"><div class="card-body" style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
+      <div class="fld"><label>From</label><input type="date" class="filter" id="dFrom" value="${_dash.from}"></div>
+      <div class="fld"><label>To</label><input type="date" class="filter" id="dTo" value="${_dash.to}"></div>
+      <div class="fld"><label>Vehicle</label><select class="filter" id="dVeh"><option value="">All Vehicles</option>${DB.vehicles.map(v=>`<option value="${v.id}" ${_dash.vehicle===v.id?"selected":""}>${esc(v.regNo)}</option>`).join("")}</select></div>
+      <div class="fld"><label>Customer</label><select class="filter" id="dCus"><option value="">All Customers</option>${DB.customers.map(v=>`<option value="${v.id}" ${_dash.customer===v.id?"selected":""}>${esc(v.name)}</option>`).join("")}</select></div>
+      <button class="btn sm" id="dClear">Clear</button>
+    </div></div>
+
+    <div class="stat-grid">
+      ${stat("Total Revenue",inrShort(tot.rev),"cash","green")}
+      ${stat("Total Expenses",inrShort(tot.totalCost),"fuel","amber")}
+      ${stat("Net Profit",inrShort(tot.profit),"dash",tot.profit>=0?"green":"red",`<div class="delta ${tot.profit>=0?"up":"down"}">${pct(tot.margin)} margin</div>`)}
+      ${stat("Total Trips",trips.length,"trip","blue")}
+      ${stat("Active Vehicles",activeV,"truck","purple")}
+      ${stat("Vehicles On Route",onRoute,"route","blue")}
+      ${stat("Vehicles Idle",idle,"truck","amber")}
+      ${stat("Total Empty KM",num(tot.emptyKm),"map","red",`<div class="delta down">${tot.dist?(tot.emptyKm/tot.dist*100).toFixed(1):0}% of total</div>`)}
+      ${stat("Avg Mileage",avgMil.toFixed(2)+" km/l","fuel","green")}
+      ${stat("Monthly Revenue",inrShort(mFin.rev),"cash","green")}
+      ${stat("Monthly Profit",inrShort(mFin.profit),"dash",mFin.profit>=0?"green":"red")}
+      ${stat("Revenue / km",tot.dist?inr(tot.rev/tot.dist):"—","route","purple")}
+    </div>
+
+    <div class="chart-grid">
+      ${chartCard("Revenue, Cost & Profit Trend","cTrend","tall")}
+      ${chartCard("Expense Breakdown","cExpense")}
+      ${chartCard("Trips by Vehicle","cVehTrips")}
+      ${chartCard("Vehicle Utilization (KM)","cUtil")}
+      ${chartCard("Top Customers by Revenue","cTopCust")}
+      ${chartCard("Top Routes by Profit","cTopRoute")}
+      ${chartCard("Profitability by Vehicle","cVehProfit")}
+      ${chartCard("Fuel Cost Trend","cFuel")}
+    </div>`;
+
+  // filter handlers
+  const reb=()=>{ _dash.from=document.getElementById("dFrom").value; _dash.to=document.getElementById("dTo").value;
+    _dash.vehicle=document.getElementById("dVeh").value; _dash.customer=document.getElementById("dCus").value;
+    destroyCharts(); viewDashboard(c); };
+  ["dFrom","dTo","dVeh","dCus"].forEach(id=>document.getElementById(id).onchange=reb);
+  document.getElementById("dClear").onclick=()=>{ _dash={vehicle:"",customer:"",from:"",to:""}; destroyCharts(); viewDashboard(c); };
+
+  drawCharts(trips,months);
+}
+function chartCard(title,canvasId,extra){
+  return `<div class="card"><div class="card-head"><h3>${title}</h3></div>
+    <div class="card-body"><div class="chart-box ${extra||""}"><canvas id="${canvasId}"></canvas></div></div></div>`;
+}
+function drawCharts(trips,months){
+  const col=chartColors();
+  Chart.defaults.font.family="Inter,sans-serif"; Chart.defaults.color=col.text;
+  const grid={color:col.grid}, noLeg={legend:{display:false}};
+  const mk=(id,cfg)=>{ const el=document.getElementById(id); if(el) charts[id]=new Chart(el,cfg); };
+
+  // Trend by month
+  const byM={}; months.forEach(m=>byM[m]={rev:0,cost:0,profit:0});
+  trips.forEach(t=>{ const m=monthKey(t.pickupDate); if(!byM[m]) return; const x=tripFinance(t);
+    byM[m].rev+=x.rev; byM[m].cost+=x.totalCost; byM[m].profit+=x.profit; });
+  const mLabels=months.map(m=>new Date(m+"-01").toLocaleDateString("en-IN",{month:"short",year:"2-digit"}));
+  mk("cTrend",{type:"bar",data:{labels:mLabels,datasets:[
+    {label:"Revenue",data:months.map(m=>byM[m].rev),backgroundColor:col.primary,borderRadius:4},
+    {label:"Cost",data:months.map(m=>byM[m].cost),backgroundColor:col.amber,borderRadius:4},
+    {type:"line",label:"Profit",data:months.map(m=>byM[m].profit),borderColor:col.green,backgroundColor:col.green,tension:.35,borderWidth:2.5,pointRadius:3}
+  ]},options:{maintainAspectRatio:false,scales:{x:{grid:{display:false}},y:{grid,ticks:{callback:v=>inrShort(v)}}},
+    plugins:{legend:{position:"bottom"},tooltip:{callbacks:{label:ctx=>ctx.dataset.label+": "+inr(ctx.raw)}}}}});
+
+  // Expense breakdown
+  const tot=sumFinance(trips);
+  mk("cExpense",{type:"doughnut",data:{labels:["Fuel","Toll","Driver","Load/Unload","Maintenance","Insurance","Permit","Other"],
+    datasets:[{data:[tot.fuel,tot.toll,tot.driverAllow,tot.load+tot.unload,tot.maint,tot.ins,tot.permit,tot.other],
+    backgroundColor:PALETTE,borderWidth:0}]},options:{maintainAspectRatio:false,cutout:"60%",
+    plugins:{legend:{position:"right"},tooltip:{callbacks:{label:ctx=>ctx.label+": "+inr(ctx.raw)}}}}});
+
+  // Trips by vehicle / utilization / profit by vehicle
+  const vAgg=DB.vehicles.map(v=>{ const ts=trips.filter(t=>t.vehicle===v.id); const f=sumFinance(ts);
+    return {reg:v.regNo,trips:ts.length,km:f.dist,profit:f.profit,rev:f.rev}; });
+  mk("cVehTrips",{type:"bar",data:{labels:vAgg.map(v=>v.reg),datasets:[{data:vAgg.map(v=>v.trips),backgroundColor:col.primary,borderRadius:5}]},
+    options:{maintainAspectRatio:false,indexAxis:"y",plugins:noLeg&&{legend:{display:false}},scales:{x:{grid,ticks:{precision:0}},y:{grid:{display:false}}}}});
+  mk("cUtil",{type:"bar",data:{labels:vAgg.map(v=>v.reg),datasets:[{data:vAgg.map(v=>v.km),backgroundColor:col.purple,borderRadius:5}]},
+    options:{maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false}},y:{grid,ticks:{callback:v=>num(v)}}}}});
+  mk("cVehProfit",{type:"bar",data:{labels:vAgg.map(v=>v.reg),datasets:[{data:vAgg.map(v=>v.profit),
+    backgroundColor:vAgg.map(v=>v.profit>=0?col.green:col.red),borderRadius:5}]},
+    options:{maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>inr(ctx.raw)}}},
+    scales:{x:{grid:{display:false}},y:{grid,ticks:{callback:v=>inrShort(v)}}}}});
+
+  // Top customers by revenue
+  const cAgg={}; trips.forEach(t=>{ const k=t.customer||"_"; cAgg[k]=(cAgg[k]||0)+tripFinance(t).rev; });
+  const topC=Object.entries(cAgg).sort((a,b)=>b[1]-a[1]).slice(0,6);
+  mk("cTopCust",{type:"bar",data:{labels:topC.map(e=>customerLabel(e[0])),datasets:[{data:topC.map(e=>e[1]),backgroundColor:col.green,borderRadius:5}]},
+    options:{maintainAspectRatio:false,indexAxis:"y",plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>inr(ctx.raw)}}},scales:{x:{grid,ticks:{callback:v=>inrShort(v)}},y:{grid:{display:false}}}}});
+
+  // Top routes by profit
+  const rAgg={}; trips.forEach(t=>{ const k=(t.pickup||"?")+" → "+(t.drop||"?"); if(!rAgg[k])rAgg[k]=0; rAgg[k]+=tripFinance(t).profit; });
+  const topR=Object.entries(rAgg).sort((a,b)=>b[1]-a[1]).slice(0,6);
+  mk("cTopRoute",{type:"bar",data:{labels:topR.map(e=>e[0]),datasets:[{data:topR.map(e=>e[1]),backgroundColor:col.amber,borderRadius:5}]},
+    options:{maintainAspectRatio:false,indexAxis:"y",plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>inr(ctx.raw)}}},scales:{x:{grid,ticks:{callback:v=>inrShort(v)}},y:{grid:{display:false}}}}});
+
+  // Fuel cost trend
+  const fM={}; months.forEach(m=>fM[m]=0); DB.fuel.forEach(f=>{ const m=monthKey(f.date); if(m in fM) fM[m]+=(+f.amount||0); });
+  mk("cFuel",{type:"line",data:{labels:mLabels,datasets:[{label:"Fuel",data:months.map(m=>fM[m]),borderColor:col.red,
+    backgroundColor:"rgba(229,72,77,.12)",fill:true,tension:.35,pointRadius:3,borderWidth:2.5}]},
+    options:{maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>inr(ctx.raw)}}},scales:{x:{grid:{display:false}},y:{grid,ticks:{callback:v=>inrShort(v)}}}}});
+}
+/* ============================ EXCEL EXPORT / IMPORT ============================ */
+function buildWorkbook(){
+  const wb=XLSX.utils.book_new();
+  const add=(name,rows)=>{ const ws=XLSX.utils.json_to_sheet(rows.length?rows:[{}]);
+    XLSX.utils.book_append_sheet(wb,ws,name.slice(0,31)); };
+
+  add("Fleet Master",DB.vehicles.map(v=>({"Reg No":v.regNo,"Veh No":v.vehNo,Type:v.type,"Capacity (T)":v.capacity,
+    Make:v.make,Model:v.model,Year:v.year,Owner:v.owner,"Fuel Type":v.fuelType,"Mileage":v.mileage,"Tank (L)":v.tankCap,
+    Odometer:v.odometer,"EMI":v.emi,"Insurance Expiry":v.insExpiry,"Fitness Expiry":v.fitnessExpiry,
+    "Permit Expiry":v.permitExpiry,"PUC Expiry":v.pucExpiry,RC:v.rc,GPS:v.gps,Status:v.status})));
+
+  add("Driver Master",DB.drivers.map(d=>({Name:d.name,"Emp ID":d.empId,Mobile:d.mobile,License:d.license,
+    "License Expiry":d.licenseExpiry,"Aadhaar/PAN":d.aadhaar,Address:d.address,Emergency:d.emergency,
+    Salary:d.salary,Incentives:d.incentives,"Assigned Vehicle":vehicleLabel(d.assignedVehicle),Status:d.status})));
+
+  add("Customer Master",DB.customers.map(c=>({Name:c.name,GST:c.gst,Contact:c.contact,Phone:c.phone,Email:c.email,
+    Address:c.address,"Payment Terms":c.paymentTerms,"Credit Limit":c.creditLimit,Status:c.status})));
+
+  add("Route Master",DB.routes.map(r=>({Pickup:r.pickup,Drop:r.drop,Corridor:r.state,"Distance (km)":r.distance,
+    "Std Freight":r.freight,"Est Fuel (L)":r.estFuel,"Toll Est":r.estToll,"Travel Time":r.travelTime})));
+
+  add("Trip Register",DB.trips.map(t=>{ const x=tripFinance(t); return {"Trip ID":t.tripId,Date:t.pickupDate,
+    Vehicle:vehicleLabel(t.vehicle),Driver:driverLabel(t.driver),Customer:customerLabel(t.customer),
+    Pickup:t.pickup,Drop:t.drop,Material:t.material,"Weight (T)":t.weight,"Invoice":t.invoiceNo,"LR No":t.lrNo,
+    "Total KM":x.dist,"Loaded KM":x.loadedKm,"Empty KM":x.emptyKm,Mileage:t.mileage,
+    Freight:x.rev,Advance:t.advance,Balance:t.remaining,Fuel:x.fuel,Toll:x.toll,Driver:x.driverAllow,
+    "Load/Unload":x.load+x.unload,Maintenance:x.maint,Insurance:x.ins,Permit:x.permit,Other:x.other,
+    "Total Cost":x.totalCost,"Net Profit":x.profit,"Margin %":+x.margin.toFixed(1),"Profit/km":+x.profitPerKm.toFixed(1),Status:t.status}; }));
+
+  add("Fuel Register",DB.fuel.map(f=>({Date:f.date,Vehicle:vehicleLabel(f.vehicle),Station:f.station,
+    Litres:f.litres,Amount:f.amount,"₹/Litre":f.litres?+(f.amount/f.litres).toFixed(2):"",Odometer:f.odometer,Mileage:f.mileage})));
+
+  add("Maintenance Register",DB.maintenance.map(m=>({Date:m.date,Vehicle:vehicleLabel(m.vehicle),"Service Type":m.serviceType,
+    "Oil Change":m.oilChange,"Tyre Change":m.tyreChange,Cost:m.cost,Garage:m.garage,"Next Due":m.nextDue,Remarks:m.remarks})));
+
+  // Revenue & Expense report by month
+  const months=[...new Set(DB.trips.map(t=>monthKey(t.pickupDate)).filter(Boolean))].sort();
+  add("Revenue Report",months.map(m=>{ const f=sumFinance(DB.trips.filter(t=>monthKey(t.pickupDate)===m));
+    return {Month:m,Trips:DB.trips.filter(t=>monthKey(t.pickupDate)===m).length,Revenue:f.rev,"Total KM":f.dist,"Rev/km":+(f.dist?f.rev/f.dist:0).toFixed(1)}; }));
+  add("Expense Report",months.map(m=>{ const f=sumFinance(DB.trips.filter(t=>monthKey(t.pickupDate)===m));
+    return {Month:m,Fuel:f.fuel,Toll:f.toll,Driver:f.driverAllow,"Load/Unload":f.load+f.unload,Maintenance:f.maint,
+      Insurance:f.ins,Permit:f.permit,Other:f.other,"Total Expense":f.totalCost}; }));
+
+  // Customer & Vehicle profitability
+  add("Customer Profitability",DB.customers.map(c=>{ const f=sumFinance(DB.trips.filter(t=>t.customer===c.id));
+    const trips=DB.trips.filter(t=>t.customer===c.id); return {Customer:c.name,Trips:trips.length,Revenue:f.rev,Cost:f.totalCost,
+      Profit:f.profit,"Margin %":+f.margin.toFixed(1),Outstanding:trips.reduce((s,t)=>s+(+t.remaining||0),0)}; }));
+  add("Vehicle Profitability",DB.vehicles.map(v=>{ const f=sumFinance(DB.trips.filter(t=>t.vehicle===v.id));
+    return {Vehicle:v.regNo,Trips:DB.trips.filter(t=>t.vehicle===v.id).length,KM:f.dist,Revenue:f.rev,Cost:f.totalCost,
+      Profit:f.profit,"Margin %":+f.margin.toFixed(1),"Profit/km":+(f.dist?f.profit/f.dist:0).toFixed(1)}; }));
+  add("Driver Performance",DB.drivers.map(d=>{ const ts=DB.trips.filter(t=>t.driver===d.id); const f=sumFinance(ts);
+    return {Driver:d.name,Trips:ts.length,KM:f.dist,Revenue:f.rev,Profit:f.profit,"Empty KM":f.emptyKm}; }));
+
+  // Dashboard summary
+  const all=sumFinance(DB.trips);
+  add("Dashboard Data",[{Metric:"Total Revenue",Value:all.rev},{Metric:"Total Expenses",Value:all.totalCost},
+    {Metric:"Net Profit",Value:all.profit},{Metric:"Gross Margin %",Value:+all.margin.toFixed(1)},
+    {Metric:"Total Trips",Value:DB.trips.length},{Metric:"Total KM",Value:all.dist},{Metric:"Empty KM",Value:all.emptyKm},
+    {Metric:"Active Vehicles",Value:DB.vehicles.filter(v=>v.status==="Active").length}]);
+  return wb;
+}
+function exportExcel(){
+  try{ const wb=buildWorkbook();
+    XLSX.writeFile(wb,`FleetView_Export_${new Date().toISOString().slice(0,10)}.xlsx`);
+    toast("Excel exported (12 sheets)");
+  }catch(e){ toast("Export failed: "+e.message,1); }
+}
+function importExcel(file){
+  const fr=new FileReader();
+  fr.onload=e=>{
+    try{
+      const wb=XLSX.read(e.target.result,{type:"array"});
+      const sheet=n=>{ const ws=wb.Sheets[wb.SheetNames.find(s=>s.toLowerCase().includes(n))]; return ws?XLSX.utils.sheet_to_json(ws):[]; };
+      let added={v:0,d:0,c:0,r:0,t:0};
+      // Vehicles
+      sheet("fleet").concat(sheet("vehicle")).forEach(row=>{ const reg=row["Reg No"]||row["Vehicle No"]||row["Vehicle No."]||row.RegNo;
+        if(!reg||DB.vehicles.some(v=>v.regNo===reg)) return;
+        DB.vehicles.push({id:uid("veh"),regNo:reg,vehNo:row["Veh No"]||reg,type:row.Type||"",capacity:row["Capacity (T)"]||row.Capacity||"",
+          make:row.Make||"",model:row.Model||"",year:row.Year||"",owner:row.Owner||"",fuelType:row["Fuel Type"]||"Diesel",
+          mileage:row.Mileage||"",odometer:row.Odometer||0,insExpiry:row["Insurance Expiry"]||"",fitnessExpiry:row["Fitness Expiry"]||"",
+          permitExpiry:row["Permit Expiry"]||"",pucExpiry:row["PUC Expiry"]||"",gps:row.GPS||"No",status:row.Status||"Active"}); added.v++; });
+      // Drivers
+      sheet("driver master").forEach(row=>{ const nm=row.Name||row["Driver Name"]; if(!nm||DB.drivers.some(d=>d.name===nm&&d.mobile==row.Mobile)) return;
+        DB.drivers.push({id:uid("drv"),name:nm,empId:row["Emp ID"]||"",mobile:row.Mobile||"",license:row.License||row["License No"]||"",
+          licenseExpiry:row["License Expiry"]||"",salary:row.Salary||"",status:row.Status||"Active"}); added.d++; });
+      // Customers
+      sheet("customer master").forEach(row=>{ const nm=row.Name||row["Customer Name"]; if(!nm||DB.customers.some(c=>c.name===nm)) return;
+        DB.customers.push({id:uid("cus"),name:nm,gst:row.GST||row["GST No"]||"",contact:row.Contact||"",phone:row.Phone||row.Contact||"",
+          email:row.Email||"",address:row.Address||"",paymentTerms:row["Payment Terms"]||row["Credit Days"]||"",creditLimit:row["Credit Limit"]||0,status:row.Status||"Active"}); added.c++; });
+      // Routes
+      sheet("route").forEach(row=>{ const p=row.Pickup,d=row.Drop; if(!p||!d) return;
+        DB.routes.push({id:uid("rt"),pickup:p,drop:d,state:row.Corridor||row.State||"",distance:row["Distance (km)"]||row.Distance||0,
+          freight:row["Std Freight"]||row.Freight||0,estFuel:row["Est Fuel (L)"]||0,estToll:row["Toll Est"]||0,travelTime:row["Travel Time"]||""}); added.r++; });
+      saveDB(); closeModal(); go(currentView);
+      toast(`Imported: ${added.v} vehicles, ${added.d} drivers, ${added.c} customers, ${added.r} routes`);
+    }catch(err){ toast("Import error: "+err.message,1); }
+  };
+  fr.readAsArrayBuffer(file);
+}
+
+/* ============================ REPORTS ============================ */
+function viewReports(c){
+  const reports=[
+    ["Daily Operations","Per-day trip log with revenue & cost","trip"],
+    ["Monthly Summary","Revenue, expense & profit by month","dash"],
+    ["Quarterly Summary","3-month rolling performance","report"],
+    ["Yearly Summary","Full-year P&L overview","report"],
+    ["Vehicle Profitability","Profit, margin & ₹/km per truck","truck"],
+    ["Customer Profitability","Revenue & outstanding per customer","cust"],
+    ["Driver Performance","Trips, KM & profit by driver","driver"],
+    ["Fuel Consumption","Refuels, litres & mileage","fuel"],
+    ["Maintenance Report","Service history & costs","wrench"],
+    ["Trip Register","Complete trip ledger","trip"],
+    ["Outstanding Payments","Pending receivables","cash"],
+    ["Revenue vs Expense","Monthly comparison","report"],
+  ];
+  c.innerHTML=`
+    <div class="alert-banner" style="background:var(--primary-soft);color:var(--primary-d)">${svg(ICON.report)}
+      Each report exports to Excel. Use <b>Export Excel</b> in the top bar for the full 12-sheet workbook, or download a single report below.</div>
+    <div class="stat-grid" style="grid-template-columns:repeat(auto-fill,minmax(260px,1fr))">
+      ${reports.map((r,i)=>`<div class="card" style="cursor:pointer" onclick="downloadReport(${i})"><div class="card-body">
+        <div class="ic" style="width:40px;height:40px;border-radius:10px;display:grid;place-items:center;background:var(--primary-soft);color:var(--primary-d);margin-bottom:12px">${svg(ICON[r[2]])}</div>
+        <div style="font-weight:700;font-size:14.5px;margin-bottom:3px">${r[0]}</div>
+        <div style="font-size:12.5px;color:var(--text-soft)">${r[1]}</div>
+        <div class="btn sm primary" style="margin-top:12px;width:fit-content">${svg(ICON.report)}Download .xlsx</div>
+      </div></div>`).join("")}
+    </div>`;
+}
+function downloadReport(i){
+  const fin=sumFinance, months=[...new Set(DB.trips.map(t=>monthKey(t.pickupDate)).filter(Boolean))].sort();
+  let name,rows;
+  const tripRow=t=>{ const x=tripFinance(t); return {"Trip ID":t.tripId,Date:t.pickupDate,Vehicle:vehicleLabel(t.vehicle),
+    Customer:customerLabel(t.customer),Route:t.pickup+" → "+t.drop,KM:x.dist,Revenue:x.rev,Cost:x.totalCost,Profit:x.profit,"Margin %":+x.margin.toFixed(1),Status:t.status}; };
+  switch(i){
+    case 0: name="Daily_Operations"; rows=DB.trips.slice().sort((a,b)=>(a.pickupDate||"").localeCompare(b.pickupDate||"")).map(tripRow); break;
+    case 1: name="Monthly_Summary"; rows=months.map(m=>{ const f=fin(DB.trips.filter(t=>monthKey(t.pickupDate)===m));
+      return {Month:m,Trips:DB.trips.filter(t=>monthKey(t.pickupDate)===m).length,Revenue:f.rev,Expense:f.totalCost,Profit:f.profit,"Margin %":+f.margin.toFixed(1),"KM":f.dist}; }); break;
+    case 2: name="Quarterly_Summary"; { const q={}; DB.trips.forEach(t=>{ const d=new Date(t.pickupDate); if(isNaN(d))return;
+      const k=d.getFullYear()+"-Q"+(Math.floor(d.getMonth()/3)+1); (q[k]=q[k]||[]).push(t); });
+      rows=Object.entries(q).map(([k,ts])=>{ const f=fin(ts); return {Quarter:k,Trips:ts.length,Revenue:f.rev,Expense:f.totalCost,Profit:f.profit,"Margin %":+f.margin.toFixed(1)}; }); } break;
+    case 3: name="Yearly_Summary"; { const y={}; DB.trips.forEach(t=>{ const yr=(t.pickupDate||"").slice(0,4); if(yr)(y[yr]=y[yr]||[]).push(t); });
+      rows=Object.entries(y).map(([k,ts])=>{ const f=fin(ts); return {Year:k,Trips:ts.length,Revenue:f.rev,Expense:f.totalCost,Profit:f.profit,"Margin %":+f.margin.toFixed(1),KM:f.dist}; }); } break;
+    case 4: name="Vehicle_Profitability"; rows=DB.vehicles.map(v=>{ const f=fin(DB.trips.filter(t=>t.vehicle===v.id));
+      return {Vehicle:v.regNo,Trips:DB.trips.filter(t=>t.vehicle===v.id).length,KM:f.dist,Revenue:f.rev,Cost:f.totalCost,Profit:f.profit,"Margin %":+f.margin.toFixed(1),"Profit/km":+(f.dist?f.profit/f.dist:0).toFixed(1)}; }); break;
+    case 5: name="Customer_Profitability"; rows=DB.customers.map(c=>{ const ts=DB.trips.filter(t=>t.customer===c.id); const f=fin(ts);
+      return {Customer:c.name,Trips:ts.length,Revenue:f.rev,Profit:f.profit,"Margin %":+f.margin.toFixed(1),Outstanding:ts.reduce((s,t)=>s+(+t.remaining||0),0)}; }); break;
+    case 6: name="Driver_Performance"; rows=DB.drivers.map(d=>{ const ts=DB.trips.filter(t=>t.driver===d.id); const f=fin(ts);
+      return {Driver:d.name,Trips:ts.length,KM:f.dist,Revenue:f.rev,Profit:f.profit,"Empty KM":f.emptyKm}; }); break;
+    case 7: name="Fuel_Consumption"; rows=DB.fuel.map(f=>({Date:f.date,Vehicle:vehicleLabel(f.vehicle),Station:f.station,Litres:f.litres,Amount:f.amount,Mileage:f.mileage,Odometer:f.odometer})); break;
+    case 8: name="Maintenance"; rows=DB.maintenance.map(m=>({Date:m.date,Vehicle:vehicleLabel(m.vehicle),Service:m.serviceType,Cost:m.cost,Garage:m.garage,"Next Due":m.nextDue})); break;
+    case 9: name="Trip_Register"; rows=DB.trips.map(tripRow); break;
+    case 10: name="Outstanding_Payments"; rows=DB.trips.filter(t=>(+t.remaining||0)>0).map(t=>({Customer:customerLabel(t.customer),"Trip ID":t.tripId,Invoice:t.invoiceNo,Freight:t.freight,Advance:t.advance,Pending:t.remaining,"Delivery Date":t.deliveryDate})); break;
+    case 11: name="Revenue_vs_Expense"; rows=months.map(m=>{ const f=fin(DB.trips.filter(t=>monthKey(t.pickupDate)===m));
+      return {Month:m,Revenue:f.rev,Expense:f.totalCost,Profit:f.profit}; }); break;
+  }
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rows.length?rows:[{Note:"No data"}]),name.slice(0,31));
+  XLSX.writeFile(wb,`FleetView_${name}.xlsx`);
+  toast(name.replace(/_/g," ")+" downloaded");
+}
+/* ============================ SETTINGS ============================ */
+function viewSettings(c){
+  c.innerHTML=`
+    <div style="max-width:760px">
+    <div class="card" style="margin-bottom:18px"><div class="card-head"><h3>Company & Currency</h3></div>
+      <div class="card-body"><div class="form-grid">
+        <div class="fld"><label>Company Name</label><input id="s_company" value="${esc(SETT.company)}"></div>
+        <div class="fld"><label>Currency Symbol</label><input id="s_currency" value="${esc(SETT.currency)}"></div>
+      </div></div></div>
+
+    <div class="card" style="margin-bottom:18px"><div class="card-head"><h3>Cost Engine Assumptions</h3></div>
+      <div class="card-body"><p style="color:var(--text-soft);margin-bottom:14px;font-size:13px">Used to allocate fixed/overhead costs into per-trip profitability.</p>
+      <div class="form-grid">
+        <div class="fld"><label>Diesel Price (₹/L)</label><input id="s_fuelPrice" type="number" value="${SETT.fuelPrice}"></div>
+        <div class="fld"><label>Maintenance (₹/km)</label><input id="s_maintPerKm" type="number" step="0.1" value="${SETT.maintPerKm}"></div>
+        <div class="fld"><label>Insurance (₹/month per vehicle)</label><input id="s_insMonthly" type="number" value="${SETT.insMonthly}"></div>
+        <div class="fld"><label>Permit (₹/month per vehicle)</label><input id="s_permitMonthly" type="number" value="${SETT.permitMonthly}"></div>
+      </div></div></div>
+
+    <div class="card" style="margin-bottom:18px"><div class="card-head"><h3>Google Maps Integration</h3></div>
+      <div class="card-body">
+        <div class="fld full"><label>Google Maps API Key (optional)</label>
+        <input id="s_mapsKey" value="${esc(SETT.mapsKey)}" placeholder="Paste a billing-enabled Maps JavaScript + Distance Matrix key">
+        <span class="hint">With a key: location search, auto distance & travel time. Without it, FleetView uses a built-in India distance table + manual entry (fully offline).</span></div>
+      </div></div>
+
+    <div class="card"><div class="card-head"><h3>Data Management</h3></div>
+      <div class="card-body" style="display:flex;gap:10px;flex-wrap:wrap">
+        <button class="btn" onclick="exportExcel()">${svg(ICON.report)}Export to Excel</button>
+        <button class="btn" id="sImport">${svg(ICON.report)}Import from Excel</button>
+        <button class="btn" onclick="backupJSON()">${svg(ICON.report)}Backup (JSON)</button>
+        <button class="btn danger" onclick="resetData()">${svg(ICON.trash)}Reset to Sample Data</button>
+        <button class="btn danger" onclick="clearAll()">${svg(ICON.trash)}Erase All Data</button>
+      </div>
+      <div class="card-body" style="border-top:1px solid var(--border);color:var(--text-soft);font-size:12.5px">
+        Records: ${DB.vehicles.length} vehicles · ${DB.drivers.length} drivers · ${DB.customers.length} customers · ${DB.routes.length} routes · ${DB.trips.length} trips · ${DB.fuel.length} fuel · ${DB.maintenance.length} maintenance.
+      </div></div>
+    </div>`;
+  const save=()=>{ SETT.company=gv("s_company");SETT.currency=gv("s_currency")||"₹";
+    SETT.fuelPrice=+gv("s_fuelPrice")||92;SETT.maintPerKm=+gv("s_maintPerKm")||0;
+    SETT.insMonthly=+gv("s_insMonthly")||0;SETT.permitMonthly=+gv("s_permitMonthly")||0;
+    const oldKey=SETT.mapsKey; SETT.mapsKey=gv("s_mapsKey").trim(); saveSett();
+    if(SETT.mapsKey&&SETT.mapsKey!==oldKey) loadGoogleMaps(); };
+  ["s_company","s_currency","s_fuelPrice","s_maintPerKm","s_insMonthly","s_permitMonthly","s_mapsKey"]
+    .forEach(id=>{ const el=document.getElementById(id); el.onchange=()=>{ save(); toast("Settings saved"); }; });
+  document.getElementById("sImport").onclick=()=>document.getElementById("fileInput").click();
+}
+function backupJSON(){
+  const blob=new Blob([JSON.stringify(DB,null,2)],{type:"application/json"});
+  const a=document.createElement("a"); a.href=URL.createObjectURL(blob);
+  a.download="FleetView_Backup_"+new Date().toISOString().slice(0,10)+".json"; a.click(); toast("Backup downloaded");
+}
+function resetData(){ confirmModal("Replace ALL current data with the original sample dataset?",()=>{
+  DB=seedData(); saveDB(); go("dashboard"); toast("Sample data restored"); }); }
+function clearAll(){ confirmModal("Erase ALL data permanently? Export a backup first if needed.",()=>{
+  DB={vehicles:[],drivers:[],customers:[],routes:[],trips:[],fuel:[],maintenance:[]}; saveDB(); go("dashboard"); toast("All data erased"); }); }
+
+/* ============================ INIT & EVENTS ============================ */
+function applyTheme(){ document.body.setAttribute("data-theme",SETT.theme);
+  const ic=document.getElementById("themeIcon");
+  ic.innerHTML=SETT.theme==="dark"
+    ?'<path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"/>'
+    :'<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.2" y1="4.2" x2="5.6" y2="5.6"/><line x1="18.4" y1="18.4" x2="19.8" y2="19.8"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.2" y1="19.8" x2="5.6" y2="18.4"/><line x1="18.4" y1="5.6" x2="19.8" y2="4.2"/>';
+}
+function init(){
+  loadDB(); applyTheme(); loadGoogleMaps(); renderNav(); go("dashboard");
+  attachFirestoreSync();
+  document.getElementById("themeBtn").onclick=()=>{ SETT.theme=SETT.theme==="dark"?"light":"dark"; saveSett(); applyTheme(); destroyCharts(); go(currentView); };
+  document.getElementById("menuToggle").onclick=()=>document.getElementById("sidebar").classList.toggle("open");
+  document.getElementById("exportBtn").onclick=exportExcel;
+  document.getElementById("importBtn").onclick=()=>document.getElementById("fileInput").click();
+  document.getElementById("fileInput").onchange=e=>{ if(e.target.files[0]) importExcel(e.target.files[0]); e.target.value=""; };
+  document.getElementById("signOutBtn").onclick=()=>{ fbUnsub&&fbUnsub(); fbAuth.signOut(); };
+  document.addEventListener("keydown",e=>{ if(e.key==="Escape") closeModal(); });
+}
+
+/* ============================ AUTH GATE ============================ */
+function showAuthScreen(msg){
+  document.getElementById("authScreen").style.display="flex";
+  document.getElementById("app").style.display="none";
+  if(msg) document.getElementById("authError").textContent=msg;
+}
+function doSignIn(){
+  const email=document.getElementById("authEmail").value.trim();
+  const pass=document.getElementById("authPass").value;
+  const errEl=document.getElementById("authError"); errEl.textContent="";
+  if(!email||!pass){ errEl.textContent="Enter email and password."; return; }
+  const btn=document.getElementById("authSubmit"); btn.textContent="Signing in…";
+  fbAuth.signInWithEmailAndPassword(email,pass)
+    .catch(e=>{ errEl.textContent = e.code==="auth/invalid-credential"||e.code==="auth/wrong-password"||e.code==="auth/user-not-found"
+        ? "Wrong email or password." : e.message; })
+    .finally(()=>{ btn.textContent="Sign In"; });
+}
+document.getElementById("authSubmit").onclick=doSignIn;
+document.getElementById("authPass").addEventListener("keydown",e=>{ if(e.key==="Enter") doSignIn(); });
+document.getElementById("authEmail").addEventListener("keydown",e=>{ if(e.key==="Enter") doSignIn(); });
+
+let appInitialized=false;
+fbAuth.onAuthStateChanged(user=>{
+  if(user){
+    document.getElementById("authScreen").style.display="none";
+    document.getElementById("app").style.display="flex";
+    if(!appInitialized){ appInitialized=true; init(); }
+    else attachFirestoreSync();
+  } else {
+    appInitialized=false;
+    showAuthScreen();
+  }
+});
+
+</script>
+
+
+</body></html>
